@@ -1,27 +1,35 @@
+import enum
 import numpy as np
+
+
+class BoardProperties(enum.IntEnum):
+    N_ROWS = 11
+    N_COLUMNS = 15
+
 
 class Board:
 
-    def __init__(self, width, height):
-        self.__width = width
-        self.__height = height
-        self.__board = self.init_board()
-
-    def init_board(self):
-        board = [[]]
-        for row in self.__width:
-            for column in self.__column:
-                board[row][column] = np.random.randint(0,10)
-        return board
-
+    def __init__(self):
+        self.__n_rows = BoardProperties.N_ROWS.value
+        self.__n_columns = BoardProperties.N_COLUMNS.value
+        self.__grid = np.random.randint(0, 10, (self.__n_rows, self.__n_columns))
 
     @property
-    def get_board(self):
-        return self.__board
+    def get_grid(self):
+        return self.__grid
 
-    def print_board(self):
+    @property
+    def get_n_rows(self):
+        return self.__n_rows
 
+    @property
+    def get_n_columns(self):
+        return self.__n_columns
+
+    def print_grid(self):
+        for row in self.__grid:
+            print(row)
 
 
 board = Board()
-board.prin
+board.print_grid()
