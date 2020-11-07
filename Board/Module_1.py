@@ -26,22 +26,24 @@ class Board:
     def get_n_columns(self):
         return self.__n_columns
 
-    def print_horizontal_border(self):
+    def __print_horizontal_border(self):
         for i in range(self.__n_columns):
             print('+---', end='')
 
     def print_grid(self):
         for row in self.__grid:
-            self.print_horizontal_border()
+            self.__print_horizontal_border()
             print(end='+')
             print()
             print(end='|')
             for column in row:
                 print(' '+str(column)+' ', end='|')
             print()
-        self.print_horizontal_border()
+        self.__print_horizontal_border()
         print(end='+')
         print()
 
-board = Board()
-board.print_grid()
+    def get_element(self, row, column):
+        return self.__grid[row][column]
+
+
