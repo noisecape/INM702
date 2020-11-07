@@ -1,8 +1,8 @@
-import enum
+from enum import IntEnum
 import numpy as np
 
 
-class BoardProperties(enum.IntEnum):
+class BoardProperties(IntEnum):
     N_ROWS = 11
     N_COLUMNS = 15
 
@@ -15,16 +15,28 @@ class Board:
         self.__grid = np.random.randint(0, 10, (self.__n_rows, self.__n_columns))
 
     @property
-    def get_grid(self):
+    def grid(self):
         return self.__grid
 
     @property
-    def get_n_rows(self):
+    def n_rows(self):
         return self.__n_rows
 
     @property
-    def get_n_columns(self):
+    def n_columns(self):
         return self.__n_columns
+
+    @grid.setter
+    def grid(self, new_grid):
+        self.__grid = new_grid
+
+    @n_rows.setter
+    def n_rows(self, new_rows):
+        self.__n_rows = new_rows
+
+    @n_columns.setter
+    def n_columns(self, new_columns):
+        self.__n_columns = new_columns
 
     def __print_horizontal_border(self):
         for i in range(self.__n_columns):
@@ -45,5 +57,4 @@ class Board:
 
     def get_element(self, row, column):
         return self.__grid[row][column]
-
 
