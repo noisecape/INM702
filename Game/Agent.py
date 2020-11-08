@@ -1,5 +1,6 @@
 from enum import IntEnum
-import Board as bd
+from Game import Board
+
 
 class AgentProperty(IntEnum):
     START_X = 0
@@ -18,7 +19,7 @@ class Agent:
         self.__x = AgentProperty.START_X.value
         self.__y = AgentProperty.START_Y.value
         self.__strategy = PlayerStrategy.NAIVE
-        self.__grid_status = bd.Board().grid
+        self.__grid_status = Board.Board().grid
 
     @property
     def grid_status(self):
@@ -50,6 +51,4 @@ class Agent:
 
     def apply_strategy(self):
         print("...computing strategy...")
-
-
 
