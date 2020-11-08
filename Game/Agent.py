@@ -1,13 +1,12 @@
-from enum import IntEnum
+import enum
 from Game import Board
 
 
-class AgentProperty(IntEnum):
-    START_X = 0
-    START_Y = 0
+class AgentProperty(enum.Enum):
+    START_LOCATION = (0, 0)
 
 
-class PlayerStrategy(IntEnum):
+class PlayerStrategy(enum.IntEnum):
     NAIVE = 0
     DIJKSTRA = 1
     ANT_COLONY = 2
@@ -15,40 +14,46 @@ class PlayerStrategy(IntEnum):
 
 class Agent:
 
-    def __init__(self):
-        self.__x = AgentProperty.START_X.value
-        self.__y = AgentProperty.START_Y.value
-        self.__strategy = PlayerStrategy.NAIVE
-        self.__grid_status = Board.Board().grid
+    def __init__(self, grid):
+        self.__current_location = AgentProperty.START_LOCATION.value
+        self.__strategy = PlayerStrategy.NAIVE.value
+        self.__grid = grid
+        self.__previous_location = (0, 0)
+
+    def get_time_value(self):
+        x = self.current_location[0]
+        y = self.current_location[1]
+        return self.grid[x][y]
 
     @property
-    def grid_status(self):
-        return self.__grid_status
+    def grid(self):
+        return self.__grid
 
     @property
     def strategy(self):
         return self.__strategy
 
     @property
-    def x(self):
-        return self.__x
-
-    @property
-    def y(self):
-        return self.__y
+    def current_location(self):
+        return self.__current_location
 
     @strategy.setter
     def strategy(self, new_strategy):
         self.__strategy = new_strategy
 
-    @x.setter
-    def x(self, new_x):
-        self.__x = new_x
-
-    @y.setter
-    def y(self, new_y):
-        self.__y = new_y
+    @current_location.setter
+    def x(self, new_location):
+        self.__current_location = new_location
 
     def apply_strategy(self):
         print("...computing strategy...")
+        print("create a dictionary of the possible moves") # {'U':(x,y), 'D':(x,y), ...}
+        print("compute the euclidean distance for all the possible moves and store them in a dictionary")
+        # {'U': eu_dist_up, 'D': eu_dist_down, ...}
+        print("choose the smallest value from the euclidean distances")
+        print("if there are some equal distances, "
+              "choose the one with the smallest amount of time to spend on the location.")
+        print("if time are equals, choose the first one.")
+
+
 

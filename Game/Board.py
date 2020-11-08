@@ -57,4 +57,3 @@ class Board:
 
     def get_element(self, row, column):
         return self.__grid[row][column]
-
