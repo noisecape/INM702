@@ -1,15 +1,4 @@
-import enum
-from Game import Board
-
-
-class AgentProperty(enum.Enum):
-    START_LOCATION = (0, 0)
-
-
-class PlayerStrategy(enum.IntEnum):
-    NAIVE = 0
-    DIJKSTRA = 1
-    ANT_COLONY = 2
+from Game.Utilities import GoalLocation, AgentProperty, PlayerStrategy, Borders, Moves
 
 
 class Agent:
@@ -42,18 +31,71 @@ class Agent:
         self.__strategy = new_strategy
 
     @current_location.setter
-    def x(self, new_location):
+    def current_location(self, new_location):
         self.__current_location = new_location
 
+    def get_possible_moves(self):
+        # STILL HAVE TO CHECK THE PREVIOUS LOCATION
+        current_x = self.current_location[0]
+        current_y = self.current_location[1]
+        possible_moves = {}
+        # check can move up
+        if current_x - 1 >= Borders.ROW_LOWER_LIMIT.value:
+            possible_moves.update({Moves.UP.name: (current_x - 1, current_y)})
+        if current_x + 1 <= Borders.ROW_UPPER_LIMIT.value:
+            possible_moves.update({Moves.DOWN.name: (current_x + 1, current_y)})
+        if current_y - 1 >= Borders.COLUMN_LOWER_LIMIT.value:
+            possible_moves.update({Moves.LEFT.name: (current_x, current_y - 1)})
+        if current_y + 1 <= Borders.COLUMN_UPPER_LIMIT.value:
+            possible_moves.update({Moves.RIGHT.name: (current_x, current_y + 1)})
+        return possible_moves
+
+    def distance_from_goal(self, moves):
+        """
+        Compute the euclidean distance from all the future's move location to the goal.
+        :return:
+        distances: a dictionary storing all the distances according to the possible move.
+        """
+
+        distances = {}
+
+        goal_x = GoalLocation.GOAL_LOCATION.value[0]
+        goal_y = GoalLocation.GOAL_LOCATION.value[1]
+
+        for key, value in moves.items():
+            if key == Moves.UP.name:
+                up_x = value[0]
+                up_y = value[1]
+                distance = self.get_euclidean_distance(goal_x, up_x, goal_y, up_y)
+                distances.update({Moves.UP.name: distance})
+            elif key == Moves.DOWN.name:
+                down_x = value[0]
+                down_y = value[1]
+                distance = self.get_euclidean_distance(goal_x, down_x, goal_y, down_y)
+                distances.update({Moves.DOWN.name: distance})
+            elif key == Moves.LEFT.name:
+                left_x = value[0]
+                left_y = value[1]
+                distance = self.get_euclidean_distance(goal_x, left_x, goal_y, left_y)
+                distances.update({Moves.LEFT.name: distance})
+            else:
+                right_x = value[0]
+                right_y = value[1]
+                distance = self.get_euclidean_distance(goal_x, right_x, goal_y, right_y)
+                distances.update({Moves.RIGHT.name: distance})
+
+        return distances
+
+    def get_euclidean_distance(self, x1, x2, y1, y2):
+        eu_distance = ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 1 / 2
+        return eu_distance
+
     def apply_strategy(self):
-        print("...computing strategy...")
-        print("create a dictionary of the possible moves") # {'U':(x,y), 'D':(x,y), ...}
-        print("compute the euclidean distance for all the possible moves and store them in a dictionary")
-        # {'U': eu_dist_up, 'D': eu_dist_down, ...}
-        print("choose the smallest value from the euclidean distances")
+        possible_moves = self.get_possible_moves()
+        distances = self.distance_from_goal(possible_moves)
+        smallest_distance = min(distances.values())
+        best_option_moves = [move for move in distances if distances[move] == smallest_distance]
+        print(f"The best options are: {best_option_moves}")
         print("if there are some equal distances, "
               "choose the one with the smallest amount of time to spend on the location.")
         print("if time are equals, choose the first one.")
-
-
-

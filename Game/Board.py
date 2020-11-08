@@ -1,10 +1,5 @@
-from enum import IntEnum
+from Game.Utilities import BoardProperties
 import numpy as np
-
-
-class BoardProperties(IntEnum):
-    N_ROWS = 11
-    N_COLUMNS = 15
 
 
 class Board:

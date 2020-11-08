@@ -1,10 +1,5 @@
-import enum
-from Game import Agent
-from Game import Board
-
-
-class GoalLocation(enum.Enum):
-    GOAL_LOCATION = (0, 0)
+from Game.Utilities import GoalLocation
+from Game import Agent, Board
 
 
 class GameManager:
@@ -43,7 +38,7 @@ class GameManager:
         If this is the case, then is game over.
 
         :return:
-        True if is gameover, otherwise False
+        True if is game over, otherwise False
 
         """
         if self.__agent.current_location == GoalLocation.GOAL_LOCATION.value:
