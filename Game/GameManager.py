@@ -11,6 +11,16 @@ class GameManager:
         self.__board = board
 
     def start_game(self):
+        """
+        This function represent the main game loop. At first the manager asks the agent
+        for the time value that it has to spend on a location. When the loop start, at each iteration
+        the time counter is incremented. When the time counter reachs the value of the time provided
+        by the agent (read from the location) then the agent is allowed to apply its strategy.
+        After the agent's move, the manager checks if the condition of 'Game Over' is reached. If that's
+        the case, then the loop is terminated. Otherwise the agent is asked for the next time value
+        of the new location and the previous steps are repeated.
+        :return: void
+        """
         print("Game started")
         player_time = self.__agent.get_time_value()
         actual_time_spent = 0

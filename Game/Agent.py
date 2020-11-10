@@ -56,6 +56,11 @@ class Agent:
             return False
 
     def get_possible_moves(self):
+        """
+        This function checks for all the possible moves that the agent at a given time can do.
+        The agent cannot come back to the previous location nor exeed the bounds of the board.
+        :return: possible_moves: list of all the possible moves
+        """
         # STILL HAVE TO CHECK THE PREVIOUS LOCATION
         current_x = self.current_location[0]
         current_y = self.current_location[1]
@@ -108,10 +113,22 @@ class Agent:
         return distances
 
     def get_euclidean_distance(self, x1, x2, y1, y2):
+        """
+        Compute the Euclidean distance
+        :param x1: x coordinate for the agent
+        :param x2: x coordinate for the goal
+        :param y1: y coordinate for the agent
+        :param y2: y coordinate for the goal
+        :return: the value of the euclidean distance
+        """
         eu_distance = ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 1 / 2
         return eu_distance
 
     def apply_strategy(self):
+        """
+        This function computes the next move for the agent according to the choosen strategy.
+        :return:
+        """
         possible_moves = self.get_possible_moves()
         distances = self.distance_from_goal(possible_moves)
         smallest_distance = min(distances.values())
