@@ -37,14 +37,19 @@ class Board:
         for i in range(self.__n_columns):
             print('+---', end='')
 
-    def print_grid(self):
-        for row in self.__grid:
+    def print_grid(self, pattern):
+        for i, row in enumerate(self.__grid):
             self.__print_horizontal_border()
             print(end='+')
             print()
             print(end='|')
-            for column in row:
-                print(' '+str(column)+' ', end='|')
+            for j, column in enumerate(row):
+                if (i, j) in pattern:
+                    G = '\033[32m'
+                    W = '\033[0m'
+                    print(' ' + G + 'X' + W + ' ', end='|')
+                else:
+                    print(' '+str(column)+' ', end='|')
             print()
         self.__print_horizontal_border()
         print(end='+')

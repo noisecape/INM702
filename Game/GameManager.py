@@ -17,7 +17,6 @@ class GameManager:
         while GameManager.game_over is False:
             # Check if the time that the player has spent in the current location
             # is equal to the time that the player need to spend in that location.
-
             if actual_time_spent == player_time:
                 print('apply strategy')
                 self.__agent.apply_strategy()
@@ -31,6 +30,8 @@ class GameManager:
                 actual_time_spent += 1
 
             GameManager.time += 1
+        self.__board.print_grid(self.__agent.pattern)
+
 
     def check_gameover(self):
         """

@@ -8,11 +8,17 @@ class Agent:
         self.__strategy = PlayerStrategy.NAIVE.value
         self.__grid = grid
         self.__previous_location = (0, 0)
+        self.__pattern = [self.__current_location]
+        self.__moves = []
 
     def get_time_value(self):
         x = self.current_location[0]
         y = self.current_location[1]
         return self.grid[x][y]
+
+    @property
+    def pattern(self):
+        return self.__pattern
 
     @property
     def grid(self):
@@ -34,19 +40,34 @@ class Agent:
     def current_location(self, new_location):
         self.__current_location = new_location
 
+    def is_previous(self, x, y):
+        """
+        Chek if the location provided in the parameters is the previous location
+        :param x: the x coordinates
+        :param y: the y coordinates
+        :return: True if the location (x,y) is the previous location
+        """
+        potential_previous = (x, y)
+        if self.__current_location == (0, 0):
+            return False
+        if potential_previous == self.__previous_location:
+            return True
+        else:
+            return False
+
     def get_possible_moves(self):
         # STILL HAVE TO CHECK THE PREVIOUS LOCATION
         current_x = self.current_location[0]
         current_y = self.current_location[1]
         possible_moves = {}
         # check can move up
-        if current_x - 1 >= Borders.ROW_LOWER_LIMIT.value:
+        if current_x - 1 >= Borders.ROW_LOWER_LIMIT.value and not self.is_previous(current_x - 1, current_y):
             possible_moves.update({Moves.UP.name: (current_x - 1, current_y)})
-        if current_x + 1 <= Borders.ROW_UPPER_LIMIT.value:
+        if current_x + 1 <= Borders.ROW_UPPER_LIMIT.value and not self.is_previous(current_x + 1, current_y):
             possible_moves.update({Moves.DOWN.name: (current_x + 1, current_y)})
-        if current_y - 1 >= Borders.COLUMN_LOWER_LIMIT.value:
+        if current_y - 1 >= Borders.COLUMN_LOWER_LIMIT.value and not self.is_previous(current_x, current_y - 1):
             possible_moves.update({Moves.LEFT.name: (current_x, current_y - 1)})
-        if current_y + 1 <= Borders.COLUMN_UPPER_LIMIT.value:
+        if current_y + 1 <= Borders.COLUMN_UPPER_LIMIT.value and not self.is_previous(current_x, current_y + 1):
             possible_moves.update({Moves.RIGHT.name: (current_x, current_y + 1)})
         return possible_moves
 
@@ -94,8 +115,13 @@ class Agent:
         possible_moves = self.get_possible_moves()
         distances = self.distance_from_goal(possible_moves)
         smallest_distance = min(distances.values())
-        best_option_moves = [move for move in distances if distances[move] == smallest_distance]
-        print(f"The best options are: {best_option_moves}")
+        possible_best_moves = [move for move in distances if distances[move] == smallest_distance]
+        best_move = possible_best_moves[0]
+        print(f"The best options are: {best_move}")
+        next_location = possible_moves[best_move]
         print("if there are some equal distances, "
               "choose the one with the smallest amount of time to spend on the location.")
-        print("if time are equals, choose the first one.")
+        self.__previous_location = self.__current_location
+        self.__current_location = next_location
+        self.__moves.append(best_move)
+        self.__pattern.append(next_location)
