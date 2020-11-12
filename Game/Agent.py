@@ -1,11 +1,12 @@
-from Game.Utilities import GoalLocation, AgentProperty, PlayerStrategy, Borders, Moves
+from Game.Utilities import GoalLocation, AgentProperty, PlayerStrategy, Borders, Moves, BoardProperties
+import sys
 
 
 class Agent:
 
     def __init__(self, grid):
         self.__current_location = AgentProperty.START_LOCATION.value
-        self.__strategy = PlayerStrategy.NAIVE.value
+        self.__strategy = PlayerStrategy.NAIVE.name
         self.__grid = grid
         self.__previous_location = (0, 0)
         self.__pattern = [self.__current_location]
@@ -58,14 +59,14 @@ class Agent:
     def get_possible_moves(self):
         """
         This function checks for all the possible moves that the agent at a given time can do.
-        The agent cannot come back to the previous location nor exeed the bounds of the board.
+        The agent cannot come back to the previous location nor exceed the bounds of the board.
         :return: possible_moves: list of all the possible moves
         """
-        # STILL HAVE TO CHECK THE PREVIOUS LOCATION
+
         current_x = self.current_location[0]
         current_y = self.current_location[1]
         possible_moves = {}
-        # check can move up
+
         if current_x - 1 >= Borders.ROW_LOWER_LIMIT.value and not self.is_previous(current_x - 1, current_y):
             possible_moves.update({Moves.UP.name: (current_x - 1, current_y)})
         if current_x + 1 <= Borders.ROW_UPPER_LIMIT.value and not self.is_previous(current_x + 1, current_y):
@@ -124,11 +125,7 @@ class Agent:
         eu_distance = ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 1 / 2
         return eu_distance
 
-    def apply_strategy(self):
-        """
-        This function computes the next move for the agent according to the choosen strategy.
-        :return:
-        """
+    def __apply_naive(self):
         possible_moves = self.get_possible_moves()
         distances = self.distance_from_goal(possible_moves)
         smallest_distance = min(distances.values())
@@ -142,3 +139,47 @@ class Agent:
         self.__current_location = next_location
         self.__moves.append(best_move)
         self.__pattern.append(next_location)
+
+    def __apply_dijkstra(self, graph):
+        print('...computing short distance using dijkstra algorithm')
+        unvisited_nodes = []
+        for i in range(len(graph)):
+            graph[i].distance = sys.maxsize
+            unvisited_nodes.append(graph[i])
+        current_node = graph[0]
+        current_node.distance = 0
+        while len(unvisited_nodes) != 0:
+            for neighbor in current_node.neighbours:
+                if neighbor.visited is True:
+                    continue
+                tentative_distance = current_node.distance + neighbor.time
+                if tentative_distance < neighbor.distance:
+                    neighbor.distance = tentative_distance
+            unvisited_nodes.remove(current_node)
+            current_node.visited = True
+            current_node.neighbours.sort(key=lambda node: node.distance)
+            print(current_node.location)
+            current_node = next((node for node in current_node.neighbours if node.visited is False), None)
+
+            if current_node is None:
+                print("")
+
+            if current_node.location == (Borders.ROW_UPPER_LIMIT.value, Borders.COLUMN_UPPER_LIMIT.value):
+                print("Found")
+                break
+
+    def __apply_ant_colony(self):
+        print('...computing short distance applying ant colony algorithm')
+
+    def apply_strategy(self, game_manager):
+        """
+        This function computes the next move for the agent according to the choosen strategy.
+        :return:
+        """
+        if self.strategy == PlayerStrategy.NAIVE.name:
+            self.__apply_naive()
+        elif self.strategy == PlayerStrategy.DIJKSTRA.name:
+            graph = game_manager.get_graph_representation()
+            self.__apply_dijkstra(graph)
+        else:
+            self.__apply_ant_colony()

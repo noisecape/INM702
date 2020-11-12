@@ -1,4 +1,5 @@
 from Game.Utilities import GoalLocation
+from Game.Utilities import PlayerStrategy
 from Game import Agent, Board
 
 
@@ -29,7 +30,7 @@ class GameManager:
             # is equal to the time that the player need to spend in that location.
             if actual_time_spent == player_time:
                 print('apply strategy')
-                self.__agent.apply_strategy()
+                self.__agent.apply_strategy(self)
                 print('check if is game over')
                 GameManager.game_over = self.check_gameover()
                 print('reset the counter for the time to spend in the next location')
@@ -42,6 +43,8 @@ class GameManager:
             GameManager.time += 1
         self.__board.print_grid(self.__agent.pattern)
 
+    def get_graph_representation(self):
+        return self.__board.create_graph()
 
     def check_gameover(self):
         """
@@ -61,6 +64,7 @@ class GameManager:
 board_instance = Board.Board()
 grid = board_instance.grid
 player = Agent.Agent(grid)
+player.strategy = PlayerStrategy.DIJKSTRA.name
 
 game_manager = GameManager(player, board_instance)
 game_manager.start_game()
