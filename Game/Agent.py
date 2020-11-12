@@ -1,25 +1,19 @@
-from Game.Utilities import GoalLocation, AgentProperty, PlayerStrategy, Borders, Moves, BoardProperties
+from Game.Utilities import PlayerStrategy, Moves
 import sys
 
 
 class Agent:
 
     def __init__(self, grid):
-        self.__current_location = AgentProperty.START_LOCATION.value
+        self.__current_location = (0, 0)
         self.__strategy = PlayerStrategy.NAIVE.name
         self.__grid = grid
         self.__previous_location = (0, 0)
-        self.__pattern = [self.__current_location]
-        self.__moves = []
 
     def get_time_value(self):
         x = self.current_location[0]
         y = self.current_location[1]
         return self.grid[x][y]
-
-    @property
-    def pattern(self):
-        return self.__pattern
 
     @property
     def grid(self):
@@ -67,13 +61,13 @@ class Agent:
         current_y = self.current_location[1]
         possible_moves = {}
 
-        if current_x - 1 >= Borders.ROW_LOWER_LIMIT.value and not self.is_previous(current_x - 1, current_y):
+        if current_x - 1 >= 0 and not self.is_previous(current_x - 1, current_y):
             possible_moves.update({Moves.UP.name: (current_x - 1, current_y)})
-        if current_x + 1 <= Borders.ROW_UPPER_LIMIT.value and not self.is_previous(current_x + 1, current_y):
+        if current_x + 1 <= len(self.grid) - 1 and not self.is_previous(current_x + 1, current_y):
             possible_moves.update({Moves.DOWN.name: (current_x + 1, current_y)})
-        if current_y - 1 >= Borders.COLUMN_LOWER_LIMIT.value and not self.is_previous(current_x, current_y - 1):
+        if current_y - 1 >= 0 and not self.is_previous(current_x, current_y - 1):
             possible_moves.update({Moves.LEFT.name: (current_x, current_y - 1)})
-        if current_y + 1 <= Borders.COLUMN_UPPER_LIMIT.value and not self.is_previous(current_x, current_y + 1):
+        if current_y + 1 <= len(self.grid[0]) - 1 and not self.is_previous(current_x, current_y + 1):
             possible_moves.update({Moves.RIGHT.name: (current_x, current_y + 1)})
         return possible_moves
 
@@ -86,8 +80,8 @@ class Agent:
 
         distances = {}
 
-        goal_x = GoalLocation.GOAL_LOCATION.value[0]
-        goal_y = GoalLocation.GOAL_LOCATION.value[1]
+        goal_x = len(self.grid) - 1
+        goal_y = len(self.grid[0]) - 1
 
         for key, value in moves.items():
             if key == Moves.UP.name:
@@ -126,19 +120,18 @@ class Agent:
         return eu_distance
 
     def __apply_naive(self):
-        possible_moves = self.get_possible_moves()
-        distances = self.distance_from_goal(possible_moves)
-        smallest_distance = min(distances.values())
-        possible_best_moves = [move for move in distances if distances[move] == smallest_distance]
-        best_move = possible_best_moves[0]
-        print(f"The best options are: {best_move}")
-        next_location = possible_moves[best_move]
-        print("if there are some equal distances, "
-              "choose the one with the smallest amount of time to spend on the location.")
-        self.__previous_location = self.__current_location
-        self.__current_location = next_location
-        self.__moves.append(best_move)
-        self.__pattern.append(next_location)
+        pattern = [self.current_location]
+        while self.current_location != (len(self.grid) - 1, len(self.grid[0]) - 1):
+            possible_moves = self.get_possible_moves()
+            distances = self.distance_from_goal(possible_moves)
+            smallest_distance = min(distances.values())
+            possible_best_moves = [move for move in distances if distances[move] == smallest_distance]
+            best_move = possible_best_moves[0]
+            next_location = possible_moves[best_move]
+            self.__previous_location = self.__current_location
+            self.__current_location = next_location
+            pattern.append(next_location)
+        return pattern
 
     def __get_closest_node(self, unseen_nodes):
         closest_node = None
@@ -172,41 +165,16 @@ class Agent:
 
         current_node = destination
         while current_node != start:
-            path.append(current_node)
+            path.append(current_node.location)
             current_node = current_node.predecessor
+
         path.reverse()
+        path.insert(0, (0, 0))
         return path
-
-
-
-
-        # for i in range(len(graph)):
-        #     graph[i].distance = sys.maxsize
-        #     unvisited_nodes.append(graph[i])
-        # current_node = graph[0]
-        #
-        # while len(unvisited_nodes) != 0:
-        #     for neighbor in current_node.neighbours:
-        #         if neighbor.visited is True:
-        #             continue
-        #         tentative_distance = current_node.distance + neighbor.time
-        #         if tentative_distance < neighbor.distance:
-        #             neighbor.distance = tentative_distance
-        #     unvisited_nodes.remove(current_node)
-        #     current_node.visited = True
-        #     current_node.neighbours.sort(key=lambda node: node.distance)
-        #     print(current_node.location)
-        #     current_node = next((node for node in current_node.neighbours if node.visited is False), None)
-        #
-        #     if current_node is None:
-        #         print("")
-        #
-        #     if current_node.location == (Borders.ROW_UPPER_LIMIT.value, Borders.COLUMN_UPPER_LIMIT.value):
-        #         print("Found")
-        #         break
 
     def __apply_ant_colony(self):
         print('...computing short distance applying ant colony algorithm')
+        return None
 
     def apply_strategy(self, game_manager):
         """
@@ -214,13 +182,12 @@ class Agent:
         :return:
         """
         if self.strategy == PlayerStrategy.NAIVE.name:
-            self.__apply_naive()
+            return self.__apply_naive()
         elif self.strategy == PlayerStrategy.DIJKSTRA.name:
             graph = game_manager.get_graph_representation()
             start = graph[0]
             destination = graph[-1]
-            path = self.__apply_dijkstra(graph, start, destination)
-            for node in path:
-                print(node.location)
+            return self.__apply_dijkstra(graph, start, destination)
+
         else:
-            self.__apply_ant_colony()
+            return self.__apply_ant_colony()

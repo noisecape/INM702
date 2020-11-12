@@ -1,4 +1,3 @@
-from Game.Utilities import GoalLocation
 from Game.Utilities import PlayerStrategy
 from Game import Agent, Board
 
@@ -13,60 +12,42 @@ class GameManager:
 
     def start_game(self):
         """
-        This function represent the main game loop. At first the manager asks the agent
-        for the time value that it has to spend on a location. When the loop start, at each iteration
-        the time counter is incremented. When the time counter reachs the value of the time provided
-        by the agent (read from the location) then the agent is allowed to apply its strategy.
-        After the agent's move, the manager checks if the condition of 'Game Over' is reached. If that's
-        the case, then the loop is terminated. Otherwise the agent is asked for the next time value
-        of the new location and the previous steps are repeated.
+        This function represent the main game loop. The agent before entering the main loop, applies the winning
+        strategy to obtain the winning pattern, which is list of locations (x,y). At each iteration of the main
+        loop, the optimal move is retrieved from the winning path. To respect the rules of the game, an internal
+        loop is created: at each iteration the duration of the game is increased by one instance of time. The loop
+        ends when the time spent in that location is equal to the amount of time required to wait in that location.
+        Finally, the agent location is updated with the optimal move retrieved in the winning_path.
         :return: void
         """
         print("Game started")
-        player_time = self.__agent.get_time_value()
-        actual_time_spent = 0
-        while GameManager.game_over is False:
-            # Check if the time that the player has spent in the current location
-            # is equal to the time that the player need to spend in that location.
-            if actual_time_spent == player_time:
-                print('apply strategy')
-                self.__agent.apply_strategy(self)
-                print('check if is game over')
-                self.__board.print_grid((0, 0))
-                GameManager.game_over = True
-                GameManager.game_over = self.check_gameover()
-                print('reset the counter for the time to spend in the next location')
-                actual_time_spent = 0
-                print('get new value for the time to spend in the new location')
-                player_time = self.__agent.get_time_value()
-            else:
-                actual_time_spent += 1
-
+        time_spent = 0
+        winning_path = self.__agent.apply_strategy(self)
+        for location in winning_path:
+            x = location[0]
+            y = location[1]
+            time_to_wait = self.__agent.grid[x][y]
+            while time_spent != time_to_wait:
+                GameManager.time += 1
+                time_spent += 1
+            self.__agent.current_location = location
             GameManager.time += 1
-        self.__board.print_grid(self.__agent.pattern)
+            time_spent = 0
+        self.__board.print_grid(winning_path)
+        print(f"Total time required: {GameManager.time}")
 
     def get_graph_representation(self):
         return self.__board.create_graph()
 
-    def check_gameover(self):
-        """
-        This function checks whether the player has reached the bottom-right corner.
-        If this is the case, then is game over.
 
-        :return:
-        True if is game over, otherwise False
-
-        """
-        if self.__agent.current_location == GoalLocation.GOAL_LOCATION.value:
-            return True
-        else:
-            return False
-
-
-board_instance = Board.Board()
+board_instance = Board.Board(11, 15)
 grid = board_instance.grid
-player = Agent.Agent(grid)
-player.strategy = PlayerStrategy.DIJKSTRA.name
+player1 = Agent.Agent(grid)
+player1.strategy = PlayerStrategy.DIJKSTRA.name
+game_manager = GameManager(player1, board_instance)
+game_manager.start_game()
 
-game_manager = GameManager(player, board_instance)
+player2 = Agent.Agent(grid)
+player2.strategy = PlayerStrategy.NAIVE.name
+game_manager = GameManager(player2, board_instance)
 game_manager.start_game()

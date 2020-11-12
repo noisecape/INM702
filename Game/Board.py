@@ -1,13 +1,12 @@
-from Game.Utilities import BoardProperties, Borders
 from Game import Node
 import numpy as np
 
 
 class Board:
 
-    def __init__(self):
-        self.__n_rows = BoardProperties.N_ROWS.value
-        self.__n_columns = BoardProperties.N_COLUMNS.value
+    def __init__(self, rows, columns):
+        self.__n_rows = rows
+        self.__n_columns = columns
         self.__grid = np.random.randint(0, 10, (self.__n_rows, self.__n_columns))
         self.__list_of_nodes = []
 
@@ -19,8 +18,8 @@ class Board:
         :return:
         list_of_nodes: the adjacency list which is responsible for the representation of the graph
         """
-        for i in range(BoardProperties.N_ROWS.value):
-            for j in range(BoardProperties.N_COLUMNS.value):
+        for i in range(self.n_rows):
+            for j in range(self.n_columns):
                 node = Node.Node(self.grid[i][j], (i, j))
                 self.list_of_nodes.append(node)
         self.__find_neighbors()
@@ -40,13 +39,13 @@ class Board:
                 # add it as a neighbor of the current node
                 neighbor = self.__find_neighbor_at(x_pos - 1, y_pos)
                 node.add_neighbor(neighbor)
-            if x_pos + 1 <= Borders.ROW_UPPER_LIMIT:
+            if x_pos + 1 <= self.n_rows - 1:
                 neighbor = self.__find_neighbor_at(x_pos + 1, y_pos)
                 node.add_neighbor(neighbor)
             if y_pos - 1 >= 0:
                 neighbor = self.__find_neighbor_at(x_pos, y_pos - 1)
                 node.add_neighbor(neighbor)
-            if y_pos + 1 <= Borders.COLUMN_UPPER_LIMIT.value:
+            if y_pos + 1 <= self.n_columns - 1:
                 neighbor = self.__find_neighbor_at(x_pos, y_pos + 1)
                 node.add_neighbor(neighbor)
 
