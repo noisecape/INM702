@@ -1,4 +1,4 @@
-from Game.Utilities import BoardProperties
+from Game.Utilities import BoardProperties, Borders
 from Game import Node
 import numpy as np
 
@@ -40,13 +40,13 @@ class Board:
                 # add it as a neighbor of the current node
                 neighbor = self.__find_neighbor_at(x_pos - 1, y_pos)
                 node.add_neighbor(neighbor)
-            if x_pos + 1 <= BoardProperties.N_ROWS.value:
+            if x_pos + 1 <= Borders.ROW_UPPER_LIMIT:
                 neighbor = self.__find_neighbor_at(x_pos + 1, y_pos)
                 node.add_neighbor(neighbor)
             if y_pos - 1 >= 0:
                 neighbor = self.__find_neighbor_at(x_pos, y_pos - 1)
                 node.add_neighbor(neighbor)
-            if y_pos + 1 <= BoardProperties.N_COLUMNS.value:
+            if y_pos + 1 <= Borders.COLUMN_UPPER_LIMIT.value:
                 neighbor = self.__find_neighbor_at(x_pos, y_pos + 1)
                 node.add_neighbor(neighbor)
 

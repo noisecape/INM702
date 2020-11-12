@@ -6,6 +6,7 @@ class Node:
         self.__neighbours = []
         self.__location = location
         self.__distance = 0
+        predecessor = None
 
     @property
     def distance(self):

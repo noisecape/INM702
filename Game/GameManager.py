@@ -32,6 +32,8 @@ class GameManager:
                 print('apply strategy')
                 self.__agent.apply_strategy(self)
                 print('check if is game over')
+                self.__board.print_grid((0, 0))
+                GameManager.game_over = True
                 GameManager.game_over = self.check_gameover()
                 print('reset the counter for the time to spend in the next location')
                 actual_time_spent = 0

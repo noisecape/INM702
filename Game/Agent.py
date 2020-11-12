@@ -140,33 +140,70 @@ class Agent:
         self.__moves.append(best_move)
         self.__pattern.append(next_location)
 
-    def __apply_dijkstra(self, graph):
-        print('...computing short distance using dijkstra algorithm')
-        unvisited_nodes = []
-        for i in range(len(graph)):
-            graph[i].distance = sys.maxsize
-            unvisited_nodes.append(graph[i])
-        current_node = graph[0]
-        current_node.distance = 0
-        while len(unvisited_nodes) != 0:
-            for neighbor in current_node.neighbours:
-                if neighbor.visited is True:
-                    continue
-                tentative_distance = current_node.distance + neighbor.time
-                if tentative_distance < neighbor.distance:
-                    neighbor.distance = tentative_distance
-            unvisited_nodes.remove(current_node)
-            current_node.visited = True
-            current_node.neighbours.sort(key=lambda node: node.distance)
-            print(current_node.location)
-            current_node = next((node for node in current_node.neighbours if node.visited is False), None)
+    def __get_closest_node(self, unseen_nodes):
+        closest_node = None
+        for node in unseen_nodes:
+            if closest_node is None:
+                closest_node = node
+            elif node.distance < closest_node.distance:
+                closest_node = node
+        return closest_node
 
-            if current_node is None:
-                print("")
+    def __apply_dijkstra(self, graph, start, destination):
+        shortest_distance = []
+        unseen_nodes = []
+        path = []
+        for node in graph:
+            if node == start:
+                node.distance = 0
+            else:
+                node.distance = sys.maxsize
+            shortest_distance.append(node)
+        unseen_nodes = graph
 
-            if current_node.location == (Borders.ROW_UPPER_LIMIT.value, Borders.COLUMN_UPPER_LIMIT.value):
-                print("Found")
-                break
+        while len(unseen_nodes) != 0:
+            shortest_node = self.__get_closest_node(unseen_nodes)
+            for neighbor in shortest_node.neighbours:
+                new_distance = shortest_node.distance + neighbor.time
+                if neighbor.distance > new_distance:
+                    neighbor.distance = new_distance
+                    neighbor.predecessor = shortest_node
+            unseen_nodes.remove(shortest_node)
+
+        current_node = destination
+        while current_node != start:
+            path.append(current_node)
+            current_node = current_node.predecessor
+        path.reverse()
+        return path
+
+
+
+
+        # for i in range(len(graph)):
+        #     graph[i].distance = sys.maxsize
+        #     unvisited_nodes.append(graph[i])
+        # current_node = graph[0]
+        #
+        # while len(unvisited_nodes) != 0:
+        #     for neighbor in current_node.neighbours:
+        #         if neighbor.visited is True:
+        #             continue
+        #         tentative_distance = current_node.distance + neighbor.time
+        #         if tentative_distance < neighbor.distance:
+        #             neighbor.distance = tentative_distance
+        #     unvisited_nodes.remove(current_node)
+        #     current_node.visited = True
+        #     current_node.neighbours.sort(key=lambda node: node.distance)
+        #     print(current_node.location)
+        #     current_node = next((node for node in current_node.neighbours if node.visited is False), None)
+        #
+        #     if current_node is None:
+        #         print("")
+        #
+        #     if current_node.location == (Borders.ROW_UPPER_LIMIT.value, Borders.COLUMN_UPPER_LIMIT.value):
+        #         print("Found")
+        #         break
 
     def __apply_ant_colony(self):
         print('...computing short distance applying ant colony algorithm')
@@ -180,6 +217,10 @@ class Agent:
             self.__apply_naive()
         elif self.strategy == PlayerStrategy.DIJKSTRA.name:
             graph = game_manager.get_graph_representation()
-            self.__apply_dijkstra(graph)
+            start = graph[0]
+            destination = graph[-1]
+            path = self.__apply_dijkstra(graph, start, destination)
+            for node in path:
+                print(node.location)
         else:
             self.__apply_ant_colony()
