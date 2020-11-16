@@ -48,6 +48,6 @@ game_manager = GameManager(player1, board_instance)
 game_manager.start_game()
 
 player2 = Agent.Agent(grid)
-player2.strategy = PlayerStrategy.NAIVE.name
+player2.strategy = PlayerStrategy.ANT_COLONY.name
 game_manager = GameManager(player2, board_instance)
 game_manager.start_game()

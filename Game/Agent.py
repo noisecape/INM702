@@ -1,4 +1,5 @@
 from Game.Utilities import PlayerStrategy, Moves
+from Game import Colony
 import sys
 
 
@@ -173,8 +174,20 @@ class Agent:
         return path
 
     def __apply_ant_colony(self):
-        print('...computing short distance applying ant colony algorithm')
+        colony = Colony.Colony(4, 0.5, 1, 5)
+        ants = colony.get_ants()
+        pheromone = self.init_pheromone()
+        print(pheromone)
         return None
+
+    def init_pheromone(self):
+        c = 0.1
+        pheromone = [[]]
+        ## ERROR
+        for row in range(len(self.grid)):
+            for column in range(row):
+                pheromone[row][column] = c
+        return pheromone
 
     def apply_strategy(self, game_manager):
         """
