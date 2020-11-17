@@ -48,6 +48,11 @@ game_manager = GameManager(player1, board_instance)
 game_manager.start_game()
 
 player2 = Agent.Agent(grid)
-player2.strategy = PlayerStrategy.A_STAR.name
+player2.strategy = PlayerStrategy.NAIVE.name
 game_manager = GameManager(player2, board_instance)
+game_manager.start_game()
+
+player3 = Agent.Agent(grid)
+player3.strategy = PlayerStrategy.A_STAR.name
+game_manager = GameManager(player3, board_instance)
 game_manager.start_game()

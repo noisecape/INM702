@@ -1,3 +1,5 @@
+import sys
+
 class Node:
 
     def __init__(self, time, location):
@@ -6,7 +8,12 @@ class Node:
         self.__neighbours = []
         self.__location = location
         self.__distance = 0
+        self.__f_score = sys.maxsize
         predecessor = None
+
+    @property
+    def f_score(self):
+        return self.__f_score
 
     @property
     def distance(self):
@@ -27,6 +34,10 @@ class Node:
     @property
     def neighbours(self):
         return self.__neighbours
+
+    @f_score.setter
+    def f_score(self, new_f_score):
+        self.__f_score = new_f_score
 
     @distance.setter
     def distance(self, new_distance):

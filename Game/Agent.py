@@ -170,16 +170,14 @@ class Agent:
         start_node = graph[0]
         dest_node = graph[-1]
         priority_queue = [start_node]
-        came_from = {}
         g_score = {}
-        f_score = {}
         for node in graph:
             if node == start_node:
                 g_score[node] = 0
-                f_score[node] = self.get_euclidean_distance(start_node.location[0], dest_node.location[0], start_node.location[1], dest_node.location[1])
+                node.f_score = self.get_euclidean_distance(start_node.location[0], dest_node.location[0], start_node.location[1], dest_node.location[1])
             else:
                 g_score[node] = sys.maxsize
-                f_score[node] = sys.maxsize
+
         while priority_queue:
             current = priority_queue.pop(-1)
             if current == dest_node:
@@ -187,14 +185,13 @@ class Agent:
                 break
             for neighbor in current.neighbours:
                 new_g_score = g_score[current] + neighbor.time
-                if new_g_score < g_score[current]:
-                    came_from[neighbor] = current
+                if new_g_score < g_score[neighbor]:
+                    neighbor.predecessor = current
                     g_score[neighbor] = new_g_score
-                    f_score[neighbor] = g_score[neighbor] + self.get_euclidean_distance(neighbor.location[0], dest_node.location[0], neighbor.location[1], dest_node.location[1])
+                    neighbor.f_score = g_score[neighbor] + self.get_euclidean_distance(neighbor.location[0], dest_node.location[0], neighbor.location[1], dest_node.location[1])
                     if neighbor not in priority_queue:
                         priority_queue.append(neighbor)
-                        #sort priority queue
-
+                        priority_queue.sort(key=lambda x: x.f_score)
         return self.get_shortest_path(dest_node, start_node)
 
     def get_shortest_path(self, dest_node, start_node):
