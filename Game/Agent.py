@@ -1,7 +1,6 @@
 from Game.Utilities import PlayerStrategy, Moves
-from Game import Colony
 import sys
-
+import numpy as np
 
 class Agent:
 
@@ -164,30 +163,49 @@ class Agent:
                     neighbor.predecessor = shortest_node
             unseen_nodes.remove(shortest_node)
 
-        current_node = destination
-        while current_node != start:
+        return self.get_shortest_path(destination, start)
+
+    def __apply_a_star(self, graph):
+        print("apply a_star")
+        start_node = graph[0]
+        dest_node = graph[-1]
+        priority_queue = [start_node]
+        came_from = {}
+        g_score = {}
+        f_score = {}
+        for node in graph:
+            if node == start_node:
+                g_score[node] = 0
+                f_score[node] = self.get_euclidean_distance(start_node.location[0], dest_node.location[0], start_node.location[1], dest_node.location[1])
+            else:
+                g_score[node] = sys.maxsize
+                f_score[node] = sys.maxsize
+        while priority_queue:
+            current = priority_queue.pop(-1)
+            if current == dest_node:
+                "destination reached"
+                break
+            for neighbor in current.neighbours:
+                new_g_score = g_score[current] + neighbor.time
+                if new_g_score < g_score[current]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = new_g_score
+                    f_score[neighbor] = g_score[neighbor] + self.get_euclidean_distance(neighbor.location[0], dest_node.location[0], neighbor.location[1], dest_node.location[1])
+                    if neighbor not in priority_queue:
+                        priority_queue.append(neighbor)
+                        #sort priority queue
+
+        return self.get_shortest_path(dest_node, start_node)
+
+    def get_shortest_path(self, dest_node, start_node):
+        path = []
+        current_node = dest_node
+        while current_node != start_node:
             path.append(current_node.location)
             current_node = current_node.predecessor
-
         path.reverse()
         path.insert(0, (0, 0))
         return path
-
-    def __apply_ant_colony(self):
-        colony = Colony.Colony(4, 0.5, 1, 5)
-        ants = colony.get_ants()
-        pheromone = self.init_pheromone()
-        print(pheromone)
-        return None
-
-    def init_pheromone(self):
-        c = 0.1
-        pheromone = [[]]
-        ## ERROR
-        for row in range(len(self.grid)):
-            for column in range(row):
-                pheromone[row][column] = c
-        return pheromone
 
     def apply_strategy(self, game_manager):
         """
@@ -203,4 +221,5 @@ class Agent:
             return self.__apply_dijkstra(graph, start, destination)
 
         else:
-            return self.__apply_ant_colony()
+            graph = game_manager.get_graph_representation()
+            return self.__apply_a_star(graph)

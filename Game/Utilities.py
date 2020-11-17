@@ -11,4 +11,4 @@ class Moves(enum.IntEnum):
 class PlayerStrategy(enum.IntEnum):
     NAIVE = 0
     DIJKSTRA = 1
-    ANT_COLONY = 2
+    A_STAR = 2
