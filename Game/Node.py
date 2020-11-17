@@ -9,7 +9,11 @@ class Node:
         self.__location = location
         self.__distance = 0
         self.__f_score = sys.maxsize
-        predecessor = None
+        self.__predecessor = None
+
+    @property
+    def predecessor(self):
+        return self.__predecessor
 
     @property
     def f_score(self):
@@ -34,6 +38,10 @@ class Node:
     @property
     def neighbours(self):
         return self.__neighbours
+
+    @predecessor.setter
+    def predecessor(self, new_predecessor):
+        self.__predecessor = new_predecessor
 
     @f_score.setter
     def f_score(self, new_f_score):

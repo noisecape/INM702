@@ -1,6 +1,6 @@
 from Game.Utilities import PlayerStrategy, Moves
 import sys
-import numpy as np
+
 
 class Agent:
 
@@ -87,22 +87,22 @@ class Agent:
             if key == Moves.UP.name:
                 up_x = value[0]
                 up_y = value[1]
-                distance = self.get_euclidean_distance(goal_x, up_x, goal_y, up_y)
+                distance = self.get_euclidean_distance(goal_x, up_x, goal_y, up_y) + self.grid[up_x][up_y]
                 distances.update({Moves.UP.name: distance})
             elif key == Moves.DOWN.name:
                 down_x = value[0]
                 down_y = value[1]
-                distance = self.get_euclidean_distance(goal_x, down_x, goal_y, down_y)
+                distance = self.get_euclidean_distance(goal_x, down_x, goal_y, down_y) + self.grid[down_x][down_y]
                 distances.update({Moves.DOWN.name: distance})
             elif key == Moves.LEFT.name:
                 left_x = value[0]
                 left_y = value[1]
-                distance = self.get_euclidean_distance(goal_x, left_x, goal_y, left_y)
+                distance = self.get_euclidean_distance(goal_x, left_x, goal_y, left_y) + self.grid[left_x][left_y]
                 distances.update({Moves.LEFT.name: distance})
             else:
                 right_x = value[0]
                 right_y = value[1]
-                distance = self.get_euclidean_distance(goal_x, right_x, goal_y, right_y)
+                distance = self.get_euclidean_distance(goal_x, right_x, goal_y, right_y) + self.grid[right_x][right_y]
                 distances.update({Moves.RIGHT.name: distance})
 
         return distances
