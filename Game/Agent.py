@@ -1,23 +1,19 @@
 from Game.Utilities import PlayerStrategy, Moves
 import sys
+import math
 
 
 class Agent:
 
-    def __init__(self, grid):
+    def __init__(self):
         self.__current_location = (0, 0)
         self.__strategy = PlayerStrategy.NAIVE.name
-        self.__grid = grid
         self.__previous_location = (0, 0)
 
     def get_time_value(self):
         x = self.current_location[0]
         y = self.current_location[1]
         return self.grid[x][y]
-
-    @property
-    def grid(self):
-        return self.__grid
 
     @property
     def strategy(self):
@@ -50,7 +46,7 @@ class Agent:
         else:
             return False
 
-    def get_possible_moves(self):
+    def get_possible_moves(self, board):
         """
         This function checks for all the possible moves that the agent at a given time can do.
         The agent cannot come back to the previous location nor exceed the bounds of the board.
@@ -63,15 +59,15 @@ class Agent:
 
         if current_x - 1 >= 0 and not self.is_previous(current_x - 1, current_y):
             possible_moves.update({Moves.UP.name: (current_x - 1, current_y)})
-        if current_x + 1 <= len(self.grid) - 1 and not self.is_previous(current_x + 1, current_y):
+        if current_x + 1 <= len(board) - 1 and not self.is_previous(current_x + 1, current_y):
             possible_moves.update({Moves.DOWN.name: (current_x + 1, current_y)})
         if current_y - 1 >= 0 and not self.is_previous(current_x, current_y - 1):
             possible_moves.update({Moves.LEFT.name: (current_x, current_y - 1)})
-        if current_y + 1 <= len(self.grid[0]) - 1 and not self.is_previous(current_x, current_y + 1):
+        if current_y + 1 <= len(board[0]) - 1 and not self.is_previous(current_x, current_y + 1):
             possible_moves.update({Moves.RIGHT.name: (current_x, current_y + 1)})
         return possible_moves
 
-    def distance_from_goal(self, moves):
+    def distance_from_goal(self, moves, board):
         """
         Compute the euclidean distance from all the future's move location to the goal.
         :return:
@@ -80,29 +76,29 @@ class Agent:
 
         distances = {}
 
-        goal_x = len(self.grid) - 1
-        goal_y = len(self.grid[0]) - 1
+        goal_x = len(board) - 1
+        goal_y = len(board[0]) - 1
 
         for key, value in moves.items():
             if key == Moves.UP.name:
                 up_x = value[0]
                 up_y = value[1]
-                distance = self.get_euclidean_distance(goal_x, up_x, goal_y, up_y) + self.grid[up_x][up_y]
+                distance = self.get_euclidean_distance(goal_x, up_x, goal_y, up_y)
                 distances.update({Moves.UP.name: distance})
             elif key == Moves.DOWN.name:
                 down_x = value[0]
                 down_y = value[1]
-                distance = self.get_euclidean_distance(goal_x, down_x, goal_y, down_y) + self.grid[down_x][down_y]
+                distance = self.get_euclidean_distance(goal_x, down_x, goal_y, down_y)
                 distances.update({Moves.DOWN.name: distance})
             elif key == Moves.LEFT.name:
                 left_x = value[0]
                 left_y = value[1]
-                distance = self.get_euclidean_distance(goal_x, left_x, goal_y, left_y) + self.grid[left_x][left_y]
+                distance = self.get_euclidean_distance(goal_x, left_x, goal_y, left_y)
                 distances.update({Moves.LEFT.name: distance})
             else:
                 right_x = value[0]
                 right_y = value[1]
-                distance = self.get_euclidean_distance(goal_x, right_x, goal_y, right_y) + self.grid[right_x][right_y]
+                distance = self.get_euclidean_distance(goal_x, right_x, goal_y, right_y)
                 distances.update({Moves.RIGHT.name: distance})
 
         return distances
@@ -116,14 +112,14 @@ class Agent:
         :param y2: y coordinate for the goal
         :return: the value of the euclidean distance
         """
-        eu_distance = ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 1 / 2
+        eu_distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
         return eu_distance
 
-    def __apply_naive(self):
+    def apply_naive(self, board):
         pattern = [self.current_location]
-        while self.current_location != (len(self.grid) - 1, len(self.grid[0]) - 1):
-            possible_moves = self.get_possible_moves()
-            distances = self.distance_from_goal(possible_moves)
+        while self.current_location != (len(board) - 1, len(board[0]) - 1):
+            possible_moves = self.get_possible_moves(board)
+            distances = self.distance_from_goal(possible_moves, board)
             smallest_distance = min(distances.values())
             possible_best_moves = [move for move in distances if distances[move] == smallest_distance]
             best_move = possible_best_moves[0]
@@ -142,17 +138,19 @@ class Agent:
                 closest_node = node
         return closest_node
 
-    def __apply_dijkstra(self, graph, start, destination):
+    def apply_dijkstra(self, graph):
         shortest_distance = []
         unseen_nodes = []
         path = []
+        start = graph[0]
+        destination = graph[-1]
         for node in graph:
             if node == start:
                 node.distance = 0
             else:
                 node.distance = sys.maxsize
             shortest_distance.append(node)
-        unseen_nodes = graph
+        unseen_nodes = graph[:]
 
         while len(unseen_nodes) != 0:
             shortest_node = self.__get_closest_node(unseen_nodes)
@@ -165,7 +163,7 @@ class Agent:
 
         return self.get_shortest_path(destination, start)
 
-    def __apply_a_star(self, graph):
+    def apply_a_star(self, graph):
         print("apply a_star")
         start_node = graph[0]
         dest_node = graph[-1]
@@ -191,7 +189,7 @@ class Agent:
                     neighbor.f_score = g_score[neighbor] + self.get_euclidean_distance(neighbor.location[0], dest_node.location[0], neighbor.location[1], dest_node.location[1])
                     if neighbor not in priority_queue:
                         priority_queue.append(neighbor)
-                        priority_queue.sort(key=lambda x: x.f_score)
+                        priority_queue.sort(key=lambda x: x.f_score, reverse=True)
         return self.get_shortest_path(dest_node, start_node)
 
     def get_shortest_path(self, dest_node, start_node):
@@ -204,19 +202,17 @@ class Agent:
         path.insert(0, (0, 0))
         return path
 
-    def apply_strategy(self, game_manager):
+    def apply_strategy(self, graph, board):
         """
         This function computes the next move for the agent according to the choosen strategy.
         :return:
         """
         if self.strategy == PlayerStrategy.NAIVE.name:
-            return self.__apply_naive()
+            return self.apply_naive(board)
         elif self.strategy == PlayerStrategy.DIJKSTRA.name:
-            graph = game_manager.get_graph_representation()
             start = graph[0]
             destination = graph[-1]
-            return self.__apply_dijkstra(graph, start, destination)
+            return self.apply_dijkstra(graph)
 
         else:
-            graph = game_manager.get_graph_representation()
-            return self.__apply_a_star(graph)
+            return self.apply_a_star(graph)
