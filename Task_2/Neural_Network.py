@@ -57,8 +57,7 @@ class NeuralNetwork:
             mini_batches = [training_data[i:i+batch_size] for i in range(0, len(training_data), batch_size)]
             for batch in mini_batches:
                 self.__update_weights_biases(batch, batch_size)
-            # FOR EACH BATCH IN MINI_BATCHES -> UPDATE WEIGHTS
-            print('sdg')
+
 
     def __update_weights_biases(self, batch, batch_size):
         """
@@ -69,10 +68,10 @@ class NeuralNetwork:
         for x_batch, y_batch in batch:
             y_batch = np.reshape(y_batch, (-1, 1))
             gradients_weights, gradients_biases = self.__back_propagation(x_batch, y_batch)
-            for l in range(len(self.weights)-1, 0, -1):
-                self.weights[l] = self.weights[l] - (self.learning_rate/batch_size)*gradients_weights[l].transpose()
-
-
+            for layer in range(len(self.weights)-1, 0, -1):
+                self.weights[layer] = self.weights[layer] - (self.learning_rate/batch_size)*gradients_weights[layer]\
+                    .transpose()
+                self.bias[layer] = self.bias[layer] - (self.learning_rate/batch_size)*gradients_biases[layer]
 
     def __back_propagation(self, X_batch, y_batch):
         """
