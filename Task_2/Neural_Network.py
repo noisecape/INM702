@@ -1,5 +1,5 @@
 import numpy as np
-import math
+import random
 from Task_2 import MeanVarNormalize
 from Task_2 import Dataset
 
@@ -18,11 +18,12 @@ class NeuralNetwork:
         activation (str): by default is the sigmoid function. Possible values: sigmoid, reLU
     """
 
-    def __init__(self, n_units_per_layer, activation=None):
+    def __init__(self, n_units_per_layer, activation=None, learning_rate=0.01):
         self.n_units_per_layer = n_units_per_layer
         self.weights = self.__init_weights()
         self.bias = [np.random.uniform(-1, 1, (y, 1)) for y in n_units_per_layer[1:]]
         self.activation = 'sigmoid' if activation is None else 'reLU'
+        self.learning_rate = learning_rate
 
     def __init_weights(self):
         """
@@ -41,29 +42,83 @@ class NeuralNetwork:
             weights[i] = normalizer.standardization()
         return weights
 
-    def __normalize_weights(self, weights):
+    def fit(self, X_train, y_train, batch_size, epochs):
         """
-        Peform the z-normalization of the generated weights.
-        :param weights: the matrix of weights to be normalized
-        :return: weights: the matrix of normalized weights
+        The training function for the model. The weights and biases are updated using the SGD with mini batches.
+        The gradient is computed using the backpropagation technique.
+        :param X_train: the input data. It contains all the vectors of pixel for each image in the training set
+        :param y_train: the truth values
+        :param batch_size: the size of each batch
+        :param epochs: the number of epochs or iteration required for the whole training process
         """
-        print(weights.shape)
+        for e in range(epochs):
+            training_data = [(x, y) for x, y in zip(X_train, y_train)]
+            np.random.shuffle(training_data)
+            mini_batches = [training_data[i:i+batch_size] for i in range(0, len(training_data), batch_size)]
+            for batch in mini_batches:
+                self.__update_weights_biases(batch)
+            # FOR EACH BATCH IN MINI_BATCHES -> UPDATE WEIGHTS
+            print('sdg')
 
-        return weights
-
-    def fit(self, X, y):
+    def __update_weights_biases(self, batch):
         """
-        The training function for the model. The function fits the data using forward and backpropagation algorithm.
-        :param X: the input data. It contains all the vectors of pixel for each image in the training set
-        :param y: the truth values
+        Function used to update values for the weights and biases. To achieve that, backpropagation algorithm is used.
+        To update the weights it is necessary to store biases and weights at each level of the network.
+        :param batch: the data currently used to train the network
         """
-        for pixels_matrix in X:
-            n = pixels_matrix.shape[0] * pixels_matrix.shape[1]
-            pixels_vector = np.reshape(pixels_matrix, (n, 1))
-            self.__forward_propagation(pixels_vector)
-            self.__backpropagation()
+        for x_batch, y_batch in batch:
+            gradients_weights, gradients_biases = self.__back_propagation(x_batch, y_batch)
+            print(gradients_weights)
+            print(gradients_biases)
 
-    # noinspection PyShadowingNames
+    def __back_propagation(self, X_batch, y_batch):
+        """
+        Apply backpropagation to compute the gradients for both the weights and the biases. It is necessary to keep
+        track of the z values for each neuron at each particular layer to compute the activations value for each neuron.
+        :param X_batch: the input data.
+        :param y_batch: the truth value for the corresponding input data.
+        :return: gradients_weights, gradients_biases: two lists which stores the gradients weights and the gradients
+        biases respectively.
+        """
+        gradients_weights = [np.zeros(x.shape[1]) for x in self.weights]
+        gradients_biases = [np.zeros(x.shape[0]) for x in self.bias]
+        # FIRST APPLY FORWARD PROPAGATION AND STORE the a-s and z-s
+        a_values, z_values = self.__forward_propagation(X_batch)
+        # THEN, COMPUTE ERROR FOR THE LAST LAYER
+        last_output = np.asarray(a_values[-1])
+        delta = last_output - y_batch
+        # THEN, APPEND DELTA IN THE LAST POSITION OF THE GRADIENT_BIAS
+        gradients_biases.append(delta)
+        # COMPUTE THE GRADIENT FOR THE LAST WEIGHTS AND ADD IT TO THE GRADIENT VECTOR
+        gradients_weights.append(np.dot(a_values[-2].transpose(), delta))
+        # START THE BACKPROP.
+        for layer in range(1, len(self.weights)-1):
+            delta = np.dot(a_values[-layer+1].transpose(), delta) * self.__der_act_function(z_values[-layer])
+        # RETURN THE TWO VECTORS OF GRADIENTS
+        return gradients_weights, gradients_biases
+
+    def __der_act_function(self, z):
+        if self.activation == 'sigmoid':
+            return self.__apply_activation(z) * (1-self.__apply_activation(z))
+        else:
+            "compute derivative of reLU"
+
+    def __forward_propagation(self, a):
+        """
+        Apply feedforward propagation algorithm. This method simply computes the values for the neurons in the next
+        hidden layer. For this purpose, the following formula is applied: a^(i+1) = act_func(z^(i))
+        :param: a is the vector that contains the values for the neurons in the previous layer.
+        :return: a_values, z_values: two lists storing respectively the activation values and the z_values at each layer
+        """
+        a_values = []
+        z_values = []
+        for weights, bias in zip(self.weights, self.bias):
+            z = np.dot(weights, a) + bias
+            z_values.append(z)
+            a = self.__apply_activation(z)
+            a_values.append(a)
+        return a_values, z_values
+
     def __apply_activation(self, z):
         """
         The function used to apply the activation function for each neuron. The available functions are
@@ -76,26 +131,9 @@ class NeuralNetwork:
         else:
             return np.max(0, z)
 
-    def __forward_propagation(self, a):
-        """
-        Apply feedforward propagation algorithm. This method simply computes the values for the neurons in the next
-        hidden layer. For this purpose, the following formula is applied: a^(i+1) = act_func(z^(i))
-        :param: a is the vector that contains the values for the neurons in the previous layer.
-        :return: returns the same vector a given in input with the new values computed by the activation function.
-        """
-        print('perform forward propagation')
-        for weights, bias in zip(self.weights, self.bias):
-            z = np.dot(weights, a) + bias
-            a = self.__apply_activation(z)
-        return a
 
-    def __backpropagation(self):
-        print('perform backpropagation')
-
-
-net = NeuralNetwork([784, 5, 5, 10])
+net = NeuralNetwork([784, 10, 10, 10])
 dataset = Dataset.Dataset()
-X = dataset.train_data
-print(X.shape)
-y = dataset.test_data
-net.fit(X, y)
+X_train = dataset.debug_train_data
+y_train = dataset.debug_train_labels
+net.fit(X_train, y_train, 10, 30)
