@@ -67,6 +67,7 @@ class NeuralNetwork:
         :param batch: the data currently used to train the network
         """
         for x_batch, y_batch in batch:
+            y_batch = np.reshape(y_batch, (-1, 1))
             gradients_weights, gradients_biases = self.__back_propagation(x_batch, y_batch)
             print(gradients_weights)
             print(gradients_biases)
@@ -92,8 +93,13 @@ class NeuralNetwork:
         # COMPUTE THE GRADIENT FOR THE LAST WEIGHTS AND ADD IT TO THE GRADIENT VECTOR
         gradients_weights.append(np.dot(a_values[-2].transpose(), delta))
         # START THE BACKPROP.
-        for layer in range(1, len(self.weights)-1):
-            delta = np.dot(a_values[-layer+1].transpose(), delta) * self.__der_act_function(z_values[-layer])
+        for layer in range(len(self.weights)-1, 1, -1):
+            delta = np.dot(a_values[layer].transpose(), delta) * self.__der_act_function(z_values[layer])
+            grad_w = np.dot(a_values[layer-1], delta.transpose())
+            gradients_biases.append(delta)
+            gradients_weights.append(grad_w)
+        gradients_weights.reverse()
+        gradients_biases.reverse()
         # RETURN THE TWO VECTORS OF GRADIENTS
         return gradients_weights, gradients_biases
 
