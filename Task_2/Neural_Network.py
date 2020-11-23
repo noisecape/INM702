@@ -56,11 +56,11 @@ class NeuralNetwork:
             np.random.shuffle(training_data)
             mini_batches = [training_data[i:i+batch_size] for i in range(0, len(training_data), batch_size)]
             for batch in mini_batches:
-                self.__update_weights_biases(batch)
+                self.__update_weights_biases(batch, batch_size)
             # FOR EACH BATCH IN MINI_BATCHES -> UPDATE WEIGHTS
             print('sdg')
 
-    def __update_weights_biases(self, batch):
+    def __update_weights_biases(self, batch, batch_size):
         """
         Function used to update values for the weights and biases. To achieve that, backpropagation algorithm is used.
         To update the weights it is necessary to store biases and weights at each level of the network.
@@ -69,8 +69,10 @@ class NeuralNetwork:
         for x_batch, y_batch in batch:
             y_batch = np.reshape(y_batch, (-1, 1))
             gradients_weights, gradients_biases = self.__back_propagation(x_batch, y_batch)
-            print(gradients_weights)
-            print(gradients_biases)
+            for l in range(len(self.weights)-1, 0, -1):
+                self.weights[l] = self.weights[l] - (self.learning_rate/batch_size)*gradients_weights[l].transpose()
+
+
 
     def __back_propagation(self, X_batch, y_batch):
         """
@@ -81,21 +83,24 @@ class NeuralNetwork:
         :return: gradients_weights, gradients_biases: two lists which stores the gradients weights and the gradients
         biases respectively.
         """
-        gradients_weights = [np.zeros(x.shape[1]) for x in self.weights]
-        gradients_biases = [np.zeros(x.shape[0]) for x in self.bias]
+        gradients_weights = []
+        gradients_biases = []
         # FIRST APPLY FORWARD PROPAGATION AND STORE the a-s and z-s
         a_values, z_values = self.__forward_propagation(X_batch)
         # THEN, COMPUTE ERROR FOR THE LAST LAYER
-        last_output = np.asarray(a_values[-1])
+        last_output = a_values[-1]
         delta = last_output - y_batch
         # THEN, APPEND DELTA IN THE LAST POSITION OF THE GRADIENT_BIAS
         gradients_biases.append(delta)
         # COMPUTE THE GRADIENT FOR THE LAST WEIGHTS AND ADD IT TO THE GRADIENT VECTOR
-        gradients_weights.append(np.dot(a_values[-2].transpose(), delta))
+        gradients_weights.append(np.dot(a_values[-2], delta.transpose()))
         # START THE BACKPROP.
-        for layer in range(len(self.weights)-1, 1, -1):
-            delta = np.dot(a_values[layer].transpose(), delta) * self.__der_act_function(z_values[layer])
-            grad_w = np.dot(a_values[layer-1], delta.transpose())
+        for layer in range(len(self.weights)-1, 0, -1):
+            next_layer = layer
+            current_layer = layer-1
+            prev_layer = current_layer-1
+            delta = np.dot(self.weights[next_layer].transpose(), delta) * self.__der_act_function(z_values[current_layer])
+            grad_w = np.dot(delta, a_values[prev_layer+1].transpose())
             gradients_biases.append(delta)
             gradients_weights.append(grad_w)
         gradients_weights.reverse()
@@ -138,7 +143,7 @@ class NeuralNetwork:
             return np.max(0, z)
 
 
-net = NeuralNetwork([784, 10, 10, 10])
+net = NeuralNetwork([784, 5, 5, 10])
 dataset = Dataset.Dataset()
 X_train = dataset.debug_train_data
 y_train = dataset.debug_train_labels
