@@ -18,7 +18,7 @@ class NeuralNetwork:
         activation (str): by default is the sigmoid function. Possible values: sigmoid, reLU
     """
 
-    def __init__(self, n_units_per_layer, activation=None, learning_rate=0.01):
+    def __init__(self, n_units_per_layer, activation=None, learning_rate=0.1):
         self.n_units_per_layer = n_units_per_layer
         self.weights = self.__init_weights()
         self.bias = [np.random.uniform(-1, 1, (y, 1)) for y in n_units_per_layer[1:]]
@@ -52,12 +52,13 @@ class NeuralNetwork:
         :param epochs: the number of epochs or iteration required for the whole training process
         """
         for e in range(epochs):
+
             training_data = [(x, y) for x, y in zip(X_train, y_train)]
             np.random.shuffle(training_data)
             mini_batches = [training_data[i:i+batch_size] for i in range(0, len(training_data), batch_size)]
             for batch in mini_batches:
                 self.__update_weights_biases(batch, batch_size)
-
+        print('DONE')
 
     def __update_weights_biases(self, batch, batch_size):
         """
@@ -88,6 +89,7 @@ class NeuralNetwork:
         a_values, z_values = self.__forward_propagation(X_batch)
         # THEN, COMPUTE ERROR FOR THE LAST LAYER
         last_output = a_values[-1]
+
         delta = last_output - y_batch
         # THEN, APPEND DELTA IN THE LAST POSITION OF THE GRADIENT_BIAS
         gradients_biases.append(delta)
@@ -142,7 +144,7 @@ class NeuralNetwork:
             return np.max(0, z)
 
 
-net = NeuralNetwork([784, 5, 5, 10])
+net = NeuralNetwork([784, 30, 10], learning_rate=0.0001)
 dataset = Dataset.Dataset()
 X_train = dataset.debug_train_data
 y_train = dataset.debug_train_labels
