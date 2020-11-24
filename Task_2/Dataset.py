@@ -17,10 +17,10 @@ class Dataset:
         # self.__test_labels = self.__reshape_labels(test_loader.test_labels)
 
         # for debugging
-        self.debug_train_data = self.__reshape_ditigs_matrix(train_loader.train_data, 2000)
-        self.debug_train_labels = self.__reshape_labels(train_loader.train_labels, 2000)
-        self.debug_test_data = self.__reshape_ditigs_matrix(test_loader.test_data, 500)
-        self.debug_test_labels = self.__reshape_labels(test_loader.test_labels, 500)
+        self.debug_train_data = self.__reshape_ditigs_matrix(train_loader.train_data.numpy(), 3000)
+        self.debug_train_labels = self.__reshape_labels(train_loader.train_labels.numpy(), 3000)
+        self.debug_test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy(), 500)
+        self.debug_test_labels = self.__reshape_labels(test_loader.test_labels.numpy(), 500)
 
     def __reshape_ditigs_matrix(self, X, size=None):
         """
@@ -30,7 +30,7 @@ class Dataset:
         """
         if size:
             reduced_X = X[:size]
-            reduced_X = [np.reshape(x, (784, 1)) for x in reduced_X]
+            reduced_X = [np.reshape(x/255, (784, 1)) for x in reduced_X]
             return reduced_X
         X = [np.reshape(x, (784, 1)) for x in X]
         return X

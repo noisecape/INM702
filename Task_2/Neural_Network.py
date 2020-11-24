@@ -42,6 +42,13 @@ class NeuralNetwork:
             weights[i] = normalizer.standardization()
         return weights
 
+    def predict(self, X_test, y_test):
+        print('predict values')
+        for x, label in zip(X_test, y_test):
+            outputs, _ = self.__forward_propagation(x)
+            predicted_digit = max(outputs[-1])
+
+
     def fit(self, X_train, y_train, batch_size, epochs):
         """
         The training function for the model. The weights and biases are updated using the SGD with mini batches.
@@ -52,13 +59,34 @@ class NeuralNetwork:
         :param epochs: the number of epochs or iteration required for the whole training process
         """
         for e in range(epochs):
-
             training_data = [(x, y) for x, y in zip(X_train, y_train)]
             np.random.shuffle(training_data)
             mini_batches = [training_data[i:i+batch_size] for i in range(0, len(training_data), batch_size)]
-            for batch in mini_batches:
+            loss_history = []
+            for counter, batch in enumerate(mini_batches):
                 self.__update_weights_biases(batch, batch_size)
+                # compute loss for this batch
+                partial_losses = self.__compute_loss(batch)
+                avg_loss = np.mean(partial_losses)
+                loss_history.append(avg_loss)
+                print(f'Loss value: {avg_loss}')
+        print(f'############ Epochs: {e+1}###########')
         print('DONE')
+
+    def __compute_loss(self, batch):
+        partial_losses = []
+        for train_sample in zip(batch):
+            data = train_sample[0]
+            X_train, y_train = data[0], data[1]
+            y_train = np.reshape(y_train, (-1,1))
+            outputs, _ = self.__forward_propagation(X_train)
+            loss = self.__cross_entropy(outputs[-1], y_train)
+            partial_losses.append(loss)
+        return partial_losses
+
+    @staticmethod
+    def __cross_entropy(y_pred, y_train):
+        return -y_train * np.log(y_pred) - (1.0-y_train) * np.log(1.0 - y_pred)
 
     def __update_weights_biases(self, batch, batch_size):
         """
@@ -89,7 +117,6 @@ class NeuralNetwork:
         a_values, z_values = self.__forward_propagation(X_batch)
         # THEN, COMPUTE ERROR FOR THE LAST LAYER
         last_output = a_values[-1]
-
         delta = last_output - y_batch
         # THEN, APPEND DELTA IN THE LAST POSITION OF THE GRADIENT_BIAS
         gradients_biases.append(delta)
@@ -144,8 +171,12 @@ class NeuralNetwork:
             return np.max(0, z)
 
 
-net = NeuralNetwork([784, 30, 10], learning_rate=0.0001)
+net = NeuralNetwork([784, 30, 10], learning_rate=0.001)
 dataset = Dataset.Dataset()
 X_train = dataset.debug_train_data
 y_train = dataset.debug_train_labels
-net.fit(X_train, y_train, 10, 30)
+X_test = dataset.debug_test_data
+y_test = dataset.debug_test_labels
+
+net.fit(X_train, y_train, 30, 40)
+net.predict(X_test, y_test)
