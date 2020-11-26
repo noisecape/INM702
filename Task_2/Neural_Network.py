@@ -58,20 +58,12 @@ class NeuralNetwork:
         :param batch_size: the size of each batch
         :param epochs: the number of epochs or iteration required for the whole training process
         """
+        for x in X_train:
+            x.shape
+        for y in y_train:
+            y.shape
         for e in range(epochs):
-            training_data = [(x, y) for x, y in zip(X_train, y_train)]
-            np.random.shuffle(training_data)
-            mini_batches = [training_data[i:i+batch_size] for i in range(0, len(training_data), batch_size)]
-            loss_history = []
-            for counter, batch in enumerate(mini_batches):
-                self.__update_weights_biases(batch, batch_size)
-                # compute loss for this batch
-                partial_losses = self.__compute_loss(batch)
-                avg_loss = np.mean(partial_losses)
-                loss_history.append(avg_loss)
-                print(f'Loss value: {avg_loss}')
-        print(f'############ Epochs: {e+1}###########')
-        print('DONE')
+            print('hi')
 
     def __compute_loss(self, batch):
         partial_losses = []
