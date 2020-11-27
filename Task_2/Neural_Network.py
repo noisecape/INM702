@@ -1,8 +1,31 @@
 import numpy as np
-from Task_2 import MeanVarNormalize
 from Task_2 import Dataset
 
-print('im in the vectorization branch')
+
+class Layer:
+
+    def __init__(self, n_neurons, input_layer = False, activation=None):
+        self.n_neurons = n_neurons
+        self.input_layer = input_layer
+        self.activation = activation
+
+
+class CrossEntropy:
+
+    def delta(self, y_pred, y):
+        return y_pred - y
+
+    def compute_loss(self, y_pred, y):
+        return
+
+
+class Sigmoid:
+
+    def apply_activation(self, z):
+        return 1 / (1 + np.exp(-z))
+
+    def derivative(self, z):
+        return self.apply_activation(z)*(1-self.apply_activation(z))
 
 class NeuralNetwork:
     """
@@ -18,29 +41,28 @@ class NeuralNetwork:
         activation (str): by default is the sigmoid function. Possible values: sigmoid, reLU
     """
 
-    def __init__(self, n_units_per_layer, activation=None, learning_rate=0.1):
-        self.n_units_per_layer = n_units_per_layer
-        self.weights = self.__init_weights()
-        self.bias = [np.random.uniform(-1, 1, (y, 1)) for y in n_units_per_layer[1:]]
-        self.activation = 'sigmoid' if activation is None else 'reLU'
-        self.learning_rate = learning_rate
+    n_layers = 0
 
-    def __init_weights(self):
-        """
-        Initialize the weights for each layer of the network. The following notation is used:
-        -i: indicates the current weight in the layer k-th layer
-        -j: indicates which neuron (in the k+1-th layer) the weight is connected to.
-        :return:
-        weights [[ndarray]]: list of matrices of the different weights in the hidden layers.
-        """
-        weights = [np.random.uniform(-1, 1, (j, i)) for i, j in zip(self.n_units_per_layer[:-1],
-                                                                    self.n_units_per_layer[1:])]
-        for i, weight_matrix in enumerate(weights):
-            normalizer = MeanVarNormalize.MeanVarNormalize(weight_matrix)
-            mean = normalizer.compute_mean()
-            normalizer.compute_std(mean)
-            weights[i] = normalizer.standardization()
-        return weights
+    def __init__(self):
+        self.layers = []
+        self.optimizer = None
+        self.loss = None
+        self.activations = []
+        self.z = []
+        self.weights = []
+        self.bias = []
+
+    def add_layer(self, layer):
+        self.layers.append(layer)
+        NeuralNetwork.n_layers += 1
+
+    def compile(self, loss, optimizer=None, lr=0.001):
+        for l in range(len(self.layers)-1):
+            w = np.array(np.random.uniform(-1, 1, (self.layers[l+1].n_neurons, self.layers[l].n_neurons)))
+            b = np.array(np.random.uniform(-1, 1, (self.layers[l+1].n_neurons, 1)))
+            self.weights.append(w)
+            self.bias.append(b)
+        self.loss = loss
 
     def predict(self, X_test, y_test):
         print('predict values')
@@ -49,7 +71,7 @@ class NeuralNetwork:
             predicted_digit = max(outputs[-1])
 
 
-    def fit(self, X_train, y_train, batch_size, epochs):
+    def fit(self, X_train, y_train, epochs=100):
         """
         The training function for the model. The weights and biases are updated using the SGD with mini batches.
         The gradient is computed using the backpropagation technique.
@@ -58,12 +80,43 @@ class NeuralNetwork:
         :param batch_size: the size of each batch
         :param epochs: the number of epochs or iteration required for the whole training process
         """
-        for x in X_train:
-            x.shape
-        for y in y_train:
-            y.shape
-        for e in range(epochs):
-            print('hi')
+        X_train.shape
+        y_train.shape
+        for x_sample, y_label in zip(X_train, y_train):
+            for e in range(epochs):
+                #forward
+                self.__forward(x_sample)
+                #backward
+                weights, biases = self.__backward(self.activations, y_label)
+                #update weights
+                #check loss value
+
+    def __backward(self, activations, y_sample):
+        d_weights, d_biases = [], []
+        delta = self.loss.delta(activations[-1], y_sample)
+        d_biases.append(delta)
+        d_weights.append(np.dot(activations[-2], delta.transpose()))
+        for l in range(NeuralNetwork.n_layers-1, 0, -1):
+            l_prev, l_current, l_next = l-1, l, l+1
+            dw = np.dot(self.weights[l_current-1].transpose(), delta)
+            delta = self.layers[l].activation.derivative(self.z[l-1]) * dw
+            d_weights.append(dw)
+            d_biases.append(delta)
+        return d_weights.reverse(), d_biases.reverse()
+        # compute the z for all the inputs in the data_set
+        # compute the a for all the inputes in the data_set
+        #for the last layer: compute delta, bias = delta, while for the weights use: dot(w^(l+1)T, delta) * sig_prime(z^l)
+
+    def __forward(self, x):
+        a_prev = x
+        for weight, bias in zip(self.weights, self.bias):
+            z = np.dot(weight, a_prev) + bias
+            self.z.append(z)
+            a_prev = self.__apply_activation(z)
+            self.activations.append(a_prev)
+
+    def __apply_activation(self, z):
+        return 1/(1+np.exp(-z))
 
     def __compute_loss(self, batch):
         partial_losses = []
@@ -134,41 +187,15 @@ class NeuralNetwork:
         else:
             "compute derivative of reLU"
 
-    def __forward_propagation(self, a):
-        """
-        Apply feedforward propagation algorithm. This method simply computes the values for the neurons in the next
-        hidden layer. For this purpose, the following formula is applied: a^(i+1) = act_func(z^(i))
-        :param: a is the vector that contains the values for the neurons in the previous layer.
-        :return: a_values, z_values: two lists storing respectively the activation values and the z_values at each layer
-        """
-        a_values = []
-        z_values = []
-        for weights, bias in zip(self.weights, self.bias):
-            z = np.dot(weights, a) + bias
-            z_values.append(z)
-            a = self.__apply_activation(z)
-            a_values.append(a)
-        return a_values, z_values
-
-    def __apply_activation(self, z):
-        """
-        The function used to apply the activation function for each neuron. The available functions are
-        sigmoid and reLU.
-        :param z: vector of all the linear combination (W*a+b) for each neuron in a particular hidden layer.
-        :return: a vector of the activation values computed by the corresponding function.
-        """
-        if self.activation == 'sigmoid':
-            return 1/(1+np.exp(-z))
-        else:
-            return np.max(0, z)
-
-
-net = NeuralNetwork([784, 30, 10], learning_rate=0.001)
 dataset = Dataset.Dataset()
 X_train = dataset.debug_train_data
 y_train = dataset.debug_train_labels
 X_test = dataset.debug_test_data
 y_test = dataset.debug_test_labels
-
-net.fit(X_train, y_train, 30, 40)
-net.predict(X_test, y_test)
+net = NeuralNetwork()
+net.add_layer(Layer(784, input_layer=True, activation='sigmoid')) # input layer
+net.add_layer(Layer(30, activation=Sigmoid())) # hidden layer
+net.add_layer(Layer(30, activation=Sigmoid())) # hidden layer
+net.add_layer(Layer(10, activation=Sigmoid())) # output layer
+net.compile(loss=CrossEntropy())
+net.fit(X_train, y_train)
