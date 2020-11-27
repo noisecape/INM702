@@ -4,7 +4,7 @@ from Task_2 import Dataset
 
 class Layer:
 
-    def __init__(self, n_neurons, input_layer = False, activation=None):
+    def __init__(self, n_neurons, input_layer=False, activation=None):
         self.n_neurons = n_neurons
         self.input_layer = input_layer
         self.activation = activation
@@ -16,7 +16,7 @@ class CrossEntropy:
         return y_pred - y
 
     def compute_loss(self, y_pred, y):
-        return
+        return -np.mean(y * np.log(y_pred) + (1.0-y) * np.log(1.0 - y_pred))
 
 
 class Sigmoid:
@@ -57,6 +57,10 @@ class NeuralNetwork:
         NeuralNetwork.n_layers += 1
 
     def compile(self, loss, optimizer=None, lr=0.001):
+        self.weights.append(np.zeros((1, 1)))
+        self.bias.append(np.zeros((1, 1)))
+        self.z.append(np.zeros((1, 1)))
+        self.activations.append(np.zeros((1, 1)))
         for l in range(len(self.layers)-1):
             w = np.array(np.random.uniform(-1, 1, (self.layers[l+1].n_neurons, self.layers[l].n_neurons)))
             b = np.array(np.random.uniform(-1, 1, (self.layers[l+1].n_neurons, 1)))
@@ -71,7 +75,7 @@ class NeuralNetwork:
             predicted_digit = max(outputs[-1])
 
 
-    def fit(self, X_train, y_train, epochs=100):
+    def fit(self, X_train, y_train, epochs=100, lr=0.001):
         """
         The training function for the model. The weights and biases are updated using the SGD with mini batches.
         The gradient is computed using the backpropagation technique.
@@ -83,55 +87,49 @@ class NeuralNetwork:
         X_train.shape
         y_train.shape
         for x_sample, y_label in zip(X_train, y_train):
+            loss_history = []
             for e in range(epochs):
                 #forward
                 self.__forward(x_sample)
                 #backward
-                weights, biases = self.__backward(self.activations, y_label)
+                grad_weights, grad_biases = self.__backward(self.activations, y_label)
+                for l in range(len(self.weights)-1, 0, -1):
+                    self.weights[l] -= (lr*np.sum(grad_weights[l]))
+                    self.bias[l] -= (lr*np.sum(grad_biases[l]))
+                self.__forward(x_sample)
+                output = self.activations[-1]
+                loss_value = self.loss.compute_loss(output, y_train)
+                loss_history.append(loss_value)
                 #update weights
                 #check loss value
+            print(loss_history)
 
     def __backward(self, activations, y_sample):
-        d_weights, d_biases = [], []
+        d_weights, d_biases = [np.zeros((1, 1))], [np.zeros((1, 1))]
         delta = self.loss.delta(activations[-1], y_sample)
         d_biases.append(delta)
         d_weights.append(np.dot(activations[-2], delta.transpose()))
-        for l in range(NeuralNetwork.n_layers-1, 0, -1):
+        for l in range(NeuralNetwork.n_layers-2, 0, -1):
             l_prev, l_current, l_next = l-1, l, l+1
-            dw = np.dot(self.weights[l_current-1].transpose(), delta)
-            delta = self.layers[l].activation.derivative(self.z[l-1]) * dw
+            dw = np.dot(self.weights[l_next].transpose(), delta)
+            delta = self.layers[l_current].activation.derivative(self.z[l_current]) * dw
             d_weights.append(dw)
             d_biases.append(delta)
-        return d_weights.reverse(), d_biases.reverse()
-        # compute the z for all the inputs in the data_set
-        # compute the a for all the inputes in the data_set
-        #for the last layer: compute delta, bias = delta, while for the weights use: dot(w^(l+1)T, delta) * sig_prime(z^l)
+        d_weights = [x for x in d_weights[1:]]
+        d_biases = [x for x in d_biases[1:]]
+        d_weights.reverse()
+        d_biases.reverse()
+        d_weights.insert(0, np.zeros((1, 1)))
+        d_biases.insert(0, np.zeros((1, 1)))
+        return d_weights, d_biases
 
     def __forward(self, x):
         a_prev = x
-        for weight, bias in zip(self.weights, self.bias):
+        for weight, bias, layer in zip(self.weights[1:], self.bias[1:], self.layers[1:]):
             z = np.dot(weight, a_prev) + bias
             self.z.append(z)
-            a_prev = self.__apply_activation(z)
+            a_prev = layer.activation.apply_activation(z)
             self.activations.append(a_prev)
-
-    def __apply_activation(self, z):
-        return 1/(1+np.exp(-z))
-
-    def __compute_loss(self, batch):
-        partial_losses = []
-        for train_sample in zip(batch):
-            data = train_sample[0]
-            X_train, y_train = data[0], data[1]
-            y_train = np.reshape(y_train, (-1,1))
-            outputs, _ = self.__forward_propagation(X_train)
-            loss = self.__cross_entropy(outputs[-1], y_train)
-            partial_losses.append(loss)
-        return partial_losses
-
-    @staticmethod
-    def __cross_entropy(y_pred, y_train):
-        return -y_train * np.log(y_pred) - (1.0-y_train) * np.log(1.0 - y_pred)
 
     def __update_weights_biases(self, batch, batch_size):
         """
@@ -198,4 +196,4 @@ net.add_layer(Layer(30, activation=Sigmoid())) # hidden layer
 net.add_layer(Layer(30, activation=Sigmoid())) # hidden layer
 net.add_layer(Layer(10, activation=Sigmoid())) # output layer
 net.compile(loss=CrossEntropy())
-net.fit(X_train, y_train)
+net.fit(X_train, y_train, epochs=5)

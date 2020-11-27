@@ -18,8 +18,8 @@ class Dataset:
         # self.__test_labels = self.__reshape_labels(test_loader.test_labels.numpy())
 
         # for debugging
-        self.debug_train_data = self.__reshape_ditigs_matrix(train_loader.train_data.numpy(), 2000)
-        self.debug_train_labels = self.__reshape_labels(train_loader.train_labels.numpy(), 2000)
+        self.debug_train_data = self.__reshape_ditigs_matrix(train_loader.train_data.numpy(), 1000)
+        self.debug_train_labels = self.__reshape_labels(train_loader.train_labels.numpy(), 1000)
         self.debug_test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy(), 500)
         self.debug_test_labels = self.__reshape_labels(test_loader.test_labels.numpy(), 500)
 
