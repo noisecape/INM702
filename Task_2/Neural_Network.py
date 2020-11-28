@@ -20,6 +20,22 @@ class CrossEntropy:
     def compute_loss(y_pred, y):
         return -np.mean(y * np.log(y_pred) + (1.0-y) * np.log(1.0 - y_pred))
 
+
+class Softmax:
+
+    def apply_activation(self, z):
+        numerator = np.exp(z)
+        denominator = [np.sum(x) for x in numerator.transpose()]
+        return numerator / denominator
+
+    @staticmethod
+    def delta(y_pred, y):
+        return y_pred - y
+
+    @staticmethod
+    def compute_loss(y_pred, y):
+        return -np.mean([np.sum(y_i*np.log(pred_i)) for y_i, pred_i in zip(y.transpose(), y_pred.transpose())])
+
 class Sigmoid:
 
     def apply_activation(self, z):
@@ -37,13 +53,6 @@ class ReLU:
         z[z < 0] = 0
         z[z > 0] = 1
         return z
-
-class Softmax:
-
-    def apply_activation(self, z):
-        outputs = np.exp(z)
-        outputs /= np.sum(outputs)
-        return outputs
 
 class NeuralNetwork:
     """
@@ -97,9 +106,7 @@ class NeuralNetwork:
         loss_history = np.array(np.zeros((epochs, 1)))
         partial_loss = 0
         for e in range(epochs):
-            #forward
             output = self.__forward(X_train)
-            #backward
             grad_weights, grad_biases = self.__backward(output, y_train)
             for l in range(len(self.weights)-1, 0, -1):
                 self.weights[l] -= (lr*grad_weights[l])
@@ -145,15 +152,19 @@ class NeuralNetwork:
         return d_weights, d_biases
 
     def predict(self, X_test, y_test):
+        # get the outputs
         output = self.__forward(X_test)
-        a = np.maximum(output)
-        pred_indices = [index for index in np.maximum(output)]
-        # get the output
-        #get the index of the max value for each classification layer
-        #compare it with the index of the max value of the y_test (max value is always one)
-
-
-
+        check = [np.sum(x) for x in output.transpose()]
+        # get the index of the predictions
+        indices_pred_truth = [(np.argmax(x), np.argmax(y)) for x, y in zip(output.transpose(), y_test.transpose())]
+        correct = 0
+        errors = 0
+        for pair in indices_pred_truth:
+            correct += 1 if pair[0] == pair[1] else 0
+        errors = y_test.shape[1] - correct
+        print(f'Correctly classified digits: {correct}')
+        print(f'Misclassified digits: {errors}')
+        print(f'Accuracy {(correct/y_test.shape[1])*100}%')
 
 
 dataset = Dataset.Dataset()
@@ -162,9 +173,10 @@ y_train = dataset.debug_train_labels
 X_test = dataset.debug_test_data
 y_test = dataset.debug_test_labels
 net = NeuralNetwork()
-net.add_layer(Layer(784, input_layer=True, activation='sigmoid')) # input layer
-net.add_layer(Layer(64, activation=Sigmoid()))
-net.add_layer(Layer(10, activation=Sigmoid()))
-net.compile(loss=CrossEntropy())
-net.fit(X_train, y_train, epochs=100, lr=0.001)
-#net.predict(X_test, y_test)
+net.add_layer(Layer(784, input_layer=True))
+net.add_layer(Layer(100, activation=ReLU()))
+net.add_layer(Layer(100, activation=Sigmoid()))
+net.add_layer(Layer(10, activation=Softmax()))
+net.compile(loss=Softmax())
+net.fit(X_train, y_train, epochs=10, lr=0.01)
+net.predict(X_test, y_test)
