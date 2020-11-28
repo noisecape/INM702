@@ -1,7 +1,6 @@
 from torchvision.datasets import MNIST
 import numpy as np
 
-
 class Dataset:
     """
     The class that wraps the MNIST dataset downloaded and loaded by pytorch-vision.
@@ -17,39 +16,28 @@ class Dataset:
         # self.__test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy())
         # self.__test_labels = self.__reshape_labels(test_loader.test_labels.numpy())
 
-        # for debugging
-        self.debug_train_data = self.__reshape_ditigs_matrix(train_loader.train_data.numpy(), 1000)
-        self.debug_train_labels = self.__reshape_labels(train_loader.train_labels.numpy(), 1000)
-        self.debug_test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy(), 500)
-        self.debug_test_labels = self.__reshape_labels(test_loader.test_labels.numpy(), 500)
+        self.debug_train_data = self.__reshape_ditigs_matrix(train_loader.train_data.numpy(), size=10000)
+        self.debug_train_labels = self.__reshape_labels(train_loader.train_labels.numpy(), size=10000)
+        self.debug_test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy(), size=500)
+        self.debug_test_labels = self.__reshape_labels(test_loader.test_labels.numpy(), size=500)
 
     def __reshape_ditigs_matrix(self, X, size=None):
         """
         :param X: the matrix to be reshaped each of shape(28x28)
         :return: X_train reshaped with size (784x1)
         """
+
         if size:
-            reduced_X = X[:size]
-            reduced_X = np.array([np.reshape(x/255, (784, 1)) for x in reduced_X])
+            reduced_X = np.reshape([(x/255) for x in X[:size]], (784, size))
             return reduced_X
-        X = np.array([np.reshape(x / 255, (784, 1)) for x in X])
+        X = np.reshape([x/255 for x in X], (784, X.shape[0]))
         return X
 
-    def __reshape_labels(self, labels, size=None):
-        if size:
-            reduced_labels = np.array(labels[:size]).reshape((size, 1))
-            y_vectorized = np.zeros((size, 10, 1))
-            for digit, y_vector in zip(reduced_labels, y_vectorized):
-                y_vector[digit] = 1
-            return y_vectorized
-
-        size = labels.shape[0]
-        reduced_labels = np.array(labels[:size]).reshape((size, 1))
-        y_vectorized = np.zeros((10, size))
-        for digit, y_vector in zip(reduced_labels, y_vectorized.transpose()):
-            y_vector[digit] = 1
-        return y_vectorized
-
+    def __reshape_labels(self, labels, size=60000):
+        vectorized_labels = np.zeros((10, size))
+        for vector, digit in zip(vectorized_labels.transpose(), labels[:size]):
+            vector[digit] = 1
+        return vectorized_labels
 
     @property
     def train_data(self):
