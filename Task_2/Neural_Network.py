@@ -28,10 +28,22 @@ class Sigmoid:
     def derivative(self, z):
         return self.apply_activation(z)*(1-self.apply_activation(z))
 
+class ReLU:
+
+    def apply_activation(self, z):
+        return np.maximum(0, z)
+
+    def derivative(self, z):
+        z[z < 0] = 0
+        z[z > 0] = 1
+        return z
+
 class Softmax:
 
     def apply_activation(self, z):
-        return 1 / (1 + np.exp(-z))
+        outputs = np.exp(z)
+        outputs /= np.sum(outputs)
+        return outputs
 
 class NeuralNetwork:
     """
@@ -66,20 +78,12 @@ class NeuralNetwork:
         self.weights.append(np.zeros((1, 1)))
         self.bias.append(np.zeros((1, 1)))
         self.Z.append(np.zeros((1, 1)))
-        self.A.append(np.zeros((1, 1)))
         for l in range(len(self.layers)-1):
             w = np.array(np.random.uniform(-1, 1, (self.layers[l+1].n_neurons, self.layers[l].n_neurons)))
             b = np.array(np.random.uniform(-1, 1, (self.layers[l+1].n_neurons, 1)))
             self.weights.append(w)
             self.bias.append(b)
         self.loss = loss
-
-    def predict(self, X_test, y_test):
-        print('predict values')
-        for x, label in zip(X_test, y_test):
-            outputs, _ = self.__forward_propagation(x)
-            predicted_digit = max(outputs[-1])
-
 
     def fit(self, X_train, y_train, epochs=100, lr=0.01):
         """
@@ -98,8 +102,8 @@ class NeuralNetwork:
             #backward
             grad_weights, grad_biases = self.__backward(output, y_train)
             for l in range(len(self.weights)-1, 0, -1):
-                self.weights[l] -= (lr*np.sum(grad_weights[l]))
-                self.bias[l] -= (lr*np.sum(grad_biases[l]))
+                self.weights[l] -= (lr*grad_weights[l])
+                self.bias[l] -= (lr*grad_biases[l])
             output = self.__forward(X_train)
             loss_value = self.loss.compute_loss(output, y_train)
             loss_history[e] = loss_value
@@ -109,6 +113,7 @@ class NeuralNetwork:
 
     def __forward(self, X):
         a_l = X
+        self.A.append(a_l)
         for l in range(1, NeuralNetwork.n_layers):
             z_l = np.dot(self.weights[l], a_l) + self.bias[l]
             a_l = self.layers[l].activation.apply_activation(z_l)
@@ -119,15 +124,18 @@ class NeuralNetwork:
     def __backward(self, output, y):
         d_weights, d_biases = [np.zeros((1, 1))], [np.zeros((1, 1))]
         delta = self.loss.delta(output, y)
-        d_biases.append(delta)
+        db = 1/y.shape[1] * np.sum(delta, axis=1, keepdims=True)
+        d_biases.append(db)
         dw = np.dot(delta, self.A[-2].transpose()) * 1/y.shape[1]
         d_weights.append(dw)
         for l in range(NeuralNetwork.n_layers-2, 0, -1):
             l_prev, l_current, l_next = l-1, l, l+1
-            dw = np.dot(self.weights[l_next].transpose(), delta)
-            delta = dw * self.layers[l_current].activation.derivative(self.Z[l_current])
+            delta = np.dot(self.weights[l_next].transpose(), delta) * self.layers[l_current].\
+                activation.derivative(self.Z[l_current])
+            dw = 1/y.shape[1] * np.dot(delta, self.A[l_prev].transpose())
             d_weights.append(dw)
-            d_biases.append(delta)
+            db = 1/y.shape[1] * np.sum(delta, axis=1, keepdims=True)
+            d_biases.append(db)
         d_weights = [x for x in d_weights[1:]]
         d_biases = [x for x in d_biases[1:]]
         d_weights.reverse()
@@ -135,6 +143,17 @@ class NeuralNetwork:
         d_weights.insert(0, np.zeros((1, 1)))
         d_biases.insert(0, np.zeros((1, 1)))
         return d_weights, d_biases
+
+    def predict(self, X_test, y_test):
+        output = self.__forward(X_test)
+        a = np.maximum(output)
+        pred_indices = [index for index in np.maximum(output)]
+        # get the output
+        #get the index of the max value for each classification layer
+        #compare it with the index of the max value of the y_test (max value is always one)
+
+
+
 
 
 dataset = Dataset.Dataset()
@@ -145,7 +164,7 @@ y_test = dataset.debug_test_labels
 net = NeuralNetwork()
 net.add_layer(Layer(784, input_layer=True, activation='sigmoid')) # input layer
 net.add_layer(Layer(64, activation=Sigmoid()))
-net.add_layer(Layer(32, activation=Sigmoid()))
 net.add_layer(Layer(10, activation=Sigmoid()))
 net.compile(loss=CrossEntropy())
 net.fit(X_train, y_train, epochs=100, lr=0.001)
+#net.predict(X_test, y_test)
