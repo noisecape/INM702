@@ -1,4 +1,4 @@
-class MeanVarNormalize():
+class MeanVarNormalize:
 
     def __init__(self, X):
         self.X = X

@@ -16,10 +16,10 @@ class Dataset:
         # self.__test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy())
         # self.__test_labels = self.__reshape_labels(test_loader.test_labels.numpy())
 
-        self.debug_train_data = self.__reshape_ditigs_matrix(train_loader.train_data.numpy(), size=6000)
-        self.debug_train_labels = self.__reshape_labels(train_loader.train_labels.numpy(), size=6000)
-        self.debug_test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy(), size=1000)
-        self.debug_test_labels = self.__reshape_labels(test_loader.test_labels.numpy(), size=1000)
+        self.debug_train_data = self.__reshape_ditigs_matrix(train_loader.train_data.numpy(), size=10000)
+        self.debug_train_labels = self.__reshape_labels(train_loader.train_labels.numpy(), size=10000)
+        self.debug_test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy(), size=5000)
+        self.debug_test_labels = self.__reshape_labels(test_loader.test_labels.numpy(), size=5000)
 
     def __reshape_ditigs_matrix(self, X, size=None):
         """

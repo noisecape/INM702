@@ -1,4 +1,7 @@
 import numpy as np
+from sklearn.metrics import accuracy_score
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
 from Task_2 import Dataset
 import time
 
@@ -19,22 +22,24 @@ class CrossEntropy:
 
     @staticmethod
     def compute_loss(y_pred, y):
-        result = np.mean(-np.sum(y*np.log(y_pred), axis=0, keepdims=True))
-        return result
+        N = y.shape[1]
+        y_pred = np.clip(y_pred, 1e-12, 1. - 1e-12)
+        error = -np.sum(y * np.log(y_pred))/N
+        return error
 
 
 class Softmax:
 
     def apply_activation(self, z):
-        num = np.exp(z - np.max(z, axis=0, keepdims=True))
-        den = np.sum(num, axis=0, keepdims=True)
-        softmax = num/den
+        num = z - np.max(z, axis=0, keepdims=True)
+        num = np.exp(num)
+        result = num / np.sum(num, axis=0, keepdims=True)
+        return result
         # maxes = np.max(z, axis=0, keepdims=True)
         # partial = z-maxes
         # num = np.exp(partial)
         # den = np.sum(num, axis=0, keepdims=True)
-        # softmax = num/den
-        return softmax
+
 
 
 class Sigmoid:
@@ -91,16 +96,18 @@ class NeuralNetwork:
         self.bias.append(np.zeros((1, 1)))
         self.Z.append(np.zeros((1, 1)))
         for l in range(len(self.layers)-1):
-            w = np.array(np.random.uniform(-1, 1, (self.layers[l+1].n_neurons, self.layers[l].n_neurons)))
-            b = np.array(np.random.uniform(-1, 1, (self.layers[l+1].n_neurons, 1)))
+            w = np.array(np.random.randn(self.layers[l+1].n_neurons, self.layers[l].n_neurons))
+            b = np.array(np.random.randn(self.layers[l+1].n_neurons, 1))
             self.weights.append(w)
             self.bias.append(b)
         self.loss = loss
 
-    def fit(self, X_train, y_train, epochs=100, lr=0.01):
+    def fit(self, X_train, y_train, epochs=100, lr=0.01, lamda=0.1):
         """
         The training function for the model. The weights and biases are updated using the SGD with mini batches.
         The gradient is computed using the backpropagation technique.
+        :param lr:
+        :param lamda:
         :param X_train: the input data. It contains all the vectors of pixel for each image in the training set
         :param y_train: the truth values
         :param batch_size: the size of each batch
@@ -108,15 +115,16 @@ class NeuralNetwork:
         """
         loss_history = np.array(np.zeros((epochs, 1)))
         for e in range(epochs):
+            print(f'EPOCH # {e}')
             output = self.forward(X_train)
             loss_value = self.loss.compute_loss(output, y_train)
+            print(f'LOSS: {loss_value}')
             loss_history[e] = loss_value
             grad_weights, grad_biases = self.backward(output, y_train)
             for l in range(len(self.weights)-1, 0, -1):
-                self.weights[l] -= (lr*grad_weights[l])
+                self.weights[l] -= ((lr * (grad_weights[l])) - (lr*lamda)/X_train.shape[1])
                 self.bias[l] -= (lr*grad_biases[l])
-        print(f'EPOCH  #{e} COMPLETED, TRAIN SAMPLE #{len(loss_history)}')
-        print(loss_history)
+        print(f'LOSS HISTORY: {loss_history}')
         print(f'Time to finish: {time.process_time()}')
 
     def forward(self, X):
@@ -132,7 +140,6 @@ class NeuralNetwork:
     def backward(self, output, y):
         d_weights, d_biases = [np.zeros((1, 1))], [np.zeros((1, 1))]
         delta = self.loss.delta(output, y)
-        d_biases.append(delta)
         db = 1/y.shape[1] * np.sum(delta, axis=1, keepdims=True)
         d_biases.append(db)
         dw = np.dot(delta, self.A[-2].transpose()) * 1/y.shape[1]
@@ -156,17 +163,18 @@ class NeuralNetwork:
     def predict(self, X_test, y_test):
         # get the outputs
         output = self.forward(X_test)
-        check = [np.sum(x) for x in output.transpose()]
-        # get the index of the predictions
-        indices_pred_truth = [(np.argmax(x), np.argmax(y)) for x, y in zip(output.transpose(), y_test.transpose())]
+        pred = np.argmax(output, axis=0)
+        y_compare = np.argmax(y_test, axis=0)
         correct = 0
         errors = 0
-        for pair in indices_pred_truth:
-            correct += 1 if pair[0] == pair[1] else 0
+        for i in range(X_test.shape[1]):
+            if pred[i] == y_compare[i]:
+                correct += 1
         errors = y_test.shape[1] - correct
+        score = accuracy_score(y_compare, pred)
+        print(f'Accuracy {score}')
         print(f'Correctly classified digits: {correct}')
         print(f'Misclassified digits: {errors}')
-        print(f'Accuracy {(correct/y_test.shape[1])*100}%')
 
 
 class StochasticGradientDescent(NeuralNetwork):
@@ -174,14 +182,14 @@ class StochasticGradientDescent(NeuralNetwork):
     def __init__(self):
         super().__init__()
 
-    def fit(self, X_train, y_train, epochs=100, lr=0.001, batch_size=1000):
+    def fit(self, X_train, y_train, epochs=1000, lr=0.1, batch_size=1000, lamda=0.1):
         # create batches
         random_indices = np.random.permutation(X_train.shape[1])
-        X_shuffled = X_train[:, random_indices]
-        y_shuffled = y_train[:, random_indices]
         loss_history = np.array(np.zeros((epochs, 1)))
         for e in range(epochs):
             t = X_train.shape[1] / batch_size
+            X_shuffled = X_train[:, random_indices]
+            y_shuffled = y_train[:, random_indices]
             print(f'Processing epoch: {e}')
             for i in range(int(t)):
                 x_batch = X_shuffled[:, i:i+X_shuffled.shape[1]:batch_size]
@@ -190,10 +198,11 @@ class StochasticGradientDescent(NeuralNetwork):
                 loss_value = self.loss.compute_loss(output, y_batch)
                 grad_weights, grad_bias = self.backward(output, y_batch)
                 for l in range(len(self.weights) - 1, 0, -1):
-                    self.weights[l] -= (lr * grad_weights[l])
+                    self.weights[l] -= ((lr * (grad_weights[l])) - (lr*lamda)/batch_size)
                     self.bias[l] -= (lr * grad_bias[l])
-            print(f'Epoch: {e} DONE')
             loss_history[e] = loss_value
+            print(f'Epoch: {e} DONE')
+            print(f'LOSS: {loss_value}')
         print(f'Cost history; {loss_history}')
         print(f'Time to finish: {time.process_time()}')
 
@@ -202,11 +211,14 @@ X_train = dataset.debug_train_data
 y_train = dataset.debug_train_labels
 X_test = dataset.debug_test_data
 y_test = dataset.debug_test_labels
+# X_test = X_train
+# y_test = y_train
+
 net = StochasticGradientDescent()
 net.add_layer(Layer(784, input_layer=True))
-net.add_layer(Layer(5, activation=Sigmoid()))
-net.add_layer(Layer(10, activation=Sigmoid()))
+net.add_layer(Layer(128, activation=ReLU()))
+net.add_layer(Layer(64, activation=ReLU()))
 net.add_layer(Layer(10, activation=Softmax()))
 net.compile(loss=CrossEntropy())
-net.fit(X_train, y_train, epochs=30, lr=0.001)
+net.fit(X_train, y_train, epochs=300, lr=0.001, lamda=0.01)
 net.predict(X_test, y_test)
