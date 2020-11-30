@@ -14,28 +14,28 @@ class CrossEntropy:
 
     @staticmethod
     def delta(y_pred, y):
-        return y_pred - y
+        result = y_pred - y
+        return result
 
     @staticmethod
     def compute_loss(y_pred, y):
-        return -np.mean(y * np.log(y_pred) + (1.0-y) * np.log(1.0 - y_pred))
+        result = np.mean(-np.sum(y*np.log(y_pred), axis=0, keepdims=True))
+        return result
 
 
 class Softmax:
 
     def apply_activation(self, z):
-        numerator = np.exp(z)
-        denominator = [np.sum(x) for x in numerator.transpose()]
-        return numerator / denominator
+        num = np.exp(z - np.max(z, axis=0, keepdims=True))
+        den = np.sum(num, axis=0, keepdims=True)
+        softmax = num/den
+        # maxes = np.max(z, axis=0, keepdims=True)
+        # partial = z-maxes
+        # num = np.exp(partial)
+        # den = np.sum(num, axis=0, keepdims=True)
+        # softmax = num/den
+        return softmax
 
-    @staticmethod
-    def delta(y_pred, y):
-        return y_pred - y
-
-    @staticmethod
-    def compute_loss(y_pred, y):
-        a = [np.sum(y_i*np.log(pred_i)) for y_i, pred_i in zip(y.transpose(), y_pred.transpose())]
-        return -np.mean(a)
 
 class Sigmoid:
 
@@ -48,7 +48,8 @@ class Sigmoid:
 class ReLU:
 
     def apply_activation(self, z):
-        return np.maximum(0, z)
+        a = np.maximum(0, z[:, 0:])
+        return a
 
     def derivative(self, z):
         z[z < 0] = 0
@@ -90,8 +91,8 @@ class NeuralNetwork:
         self.bias.append(np.zeros((1, 1)))
         self.Z.append(np.zeros((1, 1)))
         for l in range(len(self.layers)-1):
-            w = np.array(np.random.randn(self.layers[l+1].n_neurons, self.layers[l].n_neurons))
-            b = np.array(np.random.randn(self.layers[l+1].n_neurons, 1))
+            w = np.array(np.random.uniform(-1, 1, (self.layers[l+1].n_neurons, self.layers[l].n_neurons)))
+            b = np.array(np.random.uniform(-1, 1, (self.layers[l+1].n_neurons, 1)))
             self.weights.append(w)
             self.bias.append(b)
         self.loss = loss
@@ -118,24 +119,6 @@ class NeuralNetwork:
         print(loss_history)
         print(f'Time to finish: {time.process_time()}')
 
-    # def grad_check(self, grad_weights, grad_biases):
-    #     weights = [np.reshape(w, (1, w.shape[0] * w.shape[1])) for w in self.weights]
-    #     theta = []
-    #     for w, b in zip(weights, self.bias):
-    #         theta.append(w)
-    #         theta.append(b)
-    #
-    #     dw = [np.reshape(w, (1, w.shape[0] * w.shape[1])) for w in grad_weights]
-    #     d_theta = []
-    #     for w, b in zip(dw, grad_biases):
-    #         d_theta.append(w)
-    #         d_theta.append(b)
-    #         eps = 1e-7
-    #     for i in range(len(theta)):
-    #         theta[i] += eps
-    #         loss1 = -np.mean([np.sum(y_i*np.log(pred_i)) for y_i, pred_i in zip(y.transpose(), y_pred.transpose())])
-
-
     def forward(self, X):
         a_l = X
         self.A.append(a_l)
@@ -149,6 +132,7 @@ class NeuralNetwork:
     def backward(self, output, y):
         d_weights, d_biases = [np.zeros((1, 1))], [np.zeros((1, 1))]
         delta = self.loss.delta(output, y)
+        d_biases.append(delta)
         db = 1/y.shape[1] * np.sum(delta, axis=1, keepdims=True)
         d_biases.append(db)
         dw = np.dot(delta, self.A[-2].transpose()) * 1/y.shape[1]
@@ -195,7 +179,7 @@ class StochasticGradientDescent(NeuralNetwork):
         random_indices = np.random.permutation(X_train.shape[1])
         X_shuffled = X_train[:, random_indices]
         y_shuffled = y_train[:, random_indices]
-        history_loss = []
+        loss_history = np.array(np.zeros((epochs, 1)))
         for e in range(epochs):
             t = X_train.shape[1] / batch_size
             print(f'Processing epoch: {e}')
@@ -204,14 +188,14 @@ class StochasticGradientDescent(NeuralNetwork):
                 y_batch = y_shuffled[:, i:i+y_shuffled.shape[1]:batch_size]
                 output = self.forward(x_batch)
                 loss_value = self.loss.compute_loss(output, y_batch)
-                history_loss.append(loss_value)
                 grad_weights, grad_bias = self.backward(output, y_batch)
                 for l in range(len(self.weights) - 1, 0, -1):
                     self.weights[l] -= (lr * grad_weights[l])
                     self.bias[l] -= (lr * grad_bias[l])
             print(f'Epoch: {e} DONE')
+            loss_history[e] = loss_value
+        print(f'Cost history; {loss_history}')
         print(f'Time to finish: {time.process_time()}')
-
 
 dataset = Dataset.Dataset()
 X_train = dataset.debug_train_data
@@ -220,8 +204,9 @@ X_test = dataset.debug_test_data
 y_test = dataset.debug_test_labels
 net = StochasticGradientDescent()
 net.add_layer(Layer(784, input_layer=True))
-net.add_layer(Layer(64, activation=ReLU()))
+net.add_layer(Layer(500, activation=Sigmoid()))
+net.add_layer(Layer(500, activation=Sigmoid()))
 net.add_layer(Layer(10, activation=Softmax()))
-net.compile(loss=Softmax())
-net.fit(X_train, y_train, epochs=100, lr=0.0001)
+net.compile(loss=CrossEntropy())
+net.fit(X_train, y_train, epochs=30, lr=0.001)
 net.predict(X_test, y_test)
