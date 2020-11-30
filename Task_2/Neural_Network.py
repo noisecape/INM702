@@ -204,8 +204,8 @@ X_test = dataset.debug_test_data
 y_test = dataset.debug_test_labels
 net = StochasticGradientDescent()
 net.add_layer(Layer(784, input_layer=True))
-net.add_layer(Layer(500, activation=Sigmoid()))
-net.add_layer(Layer(500, activation=Sigmoid()))
+net.add_layer(Layer(5, activation=Sigmoid()))
+net.add_layer(Layer(10, activation=Sigmoid()))
 net.add_layer(Layer(10, activation=Softmax()))
 net.compile(loss=CrossEntropy())
 net.fit(X_train, y_train, epochs=30, lr=0.001)
