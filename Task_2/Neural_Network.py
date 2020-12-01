@@ -53,13 +53,33 @@ class Sigmoid:
 class ReLU:
 
     def apply_activation(self, z):
-        a = np.maximum(0, z[:, 0:])
+        a = np.zeros(z.shape)
+        for i in range(z.shape[0]):
+            for j in range(z.shape[1]):
+                a[i, j] = np.maximum(0, z[i, j])
         return a
 
     def derivative(self, z):
-        z[z < 0] = 0
-        z[z > 0] = 1
-        return z
+        z_prime = np.zeros(z.shape)
+        for i in range(z.shape[0]):
+            for j in range(z.shape[1]):
+                z_prime[i, j] = 0.1 if z[i, j] < 0 else 1
+        return z_prime
+
+class LeakyReLU:
+    def apply_activation(self, z):
+        a = np.zeros(z.shape)
+        for i in range(z.shape[0]):
+            for j in range(z.shape[1]):
+                a[i, j] = np.maximum(0.1, z[i, j])
+        return a
+
+    def derivative(self, z):
+        z_prime = np.zeros(z.shape)
+        for i in range(z.shape[0]):
+            for j in range(z.shape[1]):
+                z_prime[i, j] = 0.1 if z[i, j] < 0 else 1
+        return z_prime
 
 
 class NeuralNetwork:
@@ -216,9 +236,8 @@ y_test = dataset.debug_test_labels
 
 net = StochasticGradientDescent()
 net.add_layer(Layer(784, input_layer=True))
-net.add_layer(Layer(128, activation=ReLU()))
-net.add_layer(Layer(64, activation=ReLU()))
+net.add_layer(Layer(800, activation=Sigmoid()))
 net.add_layer(Layer(10, activation=Softmax()))
 net.compile(loss=CrossEntropy())
-net.fit(X_train, y_train, epochs=300, lr=0.001, lamda=0.01)
+net.fit(X_train, y_train, epochs=90, lr=0.01, lamda=0.1)
 net.predict(X_test, y_test)
