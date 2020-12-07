@@ -5,9 +5,11 @@ import torch as th
 # import neural network from pytorch
 import torch.nn as nn
 # import non linear activation function
-import torch.functional as F
+import torch.nn.functional as F
 # import optimizer for training
 import torch.optim as optim
+from sklearn.metrics import accuracy_score
+
 
 class CustomNetwork(nn.Module):
 
@@ -28,24 +30,38 @@ class CustomNetwork(nn.Module):
         output = x
         for i, a in enumerate(self.act_functions):
             if i == len(self.act_functions) - 1:
-                output = F.softmax(a(output))
-            output = F.relu(a(output))
+                break
+            else:
+                output = F.relu(a(output))
         return output
 
+    def fit(self, X, y, optimizer, loss_f=nn.CrossEntropyLoss(), epochs=100):
+        self.train()
+        for e in range(epochs):
+            optimizer.zero_grad()
+            loss_history = []
+            output = self.__forward(X)
+            loss = loss_f(output, y)
+            loss_history.append(loss)
+            loss.backward()
+            optimizer.step()
+            print(loss)
 
-    def fit(self, X, y, optimizer, loss=nn.CrossEntropyLoss(), epoch=100):
-        output = self.__forward(X)
+    def evaluate(self, X_test, y_test):
+        self.eval()
+        y_pred = self.__forward(X_test)
+        score = self.eval()
+        print(score)
 
 
 
-dataset = my_nn.Dataset()
-X_train = th.from_numpy(dataset.debug_train_data)
+
+dataset = my_nn.Dataset(False)
+X_train = th.from_numpy(dataset.debug_train_data.transpose()).float()
 y_train = th.from_numpy(dataset.debug_train_labels)
-X_test = th.from_numpy(dataset.debug_test_data)
+X_test = th.from_numpy(dataset.debug_test_data.transpose()).float()
 y_test = th.from_numpy(dataset.debug_test_labels)
-custom_nn = CustomNetwork(3, [784, 128, 10])
-for p in custom_nn.parameters():
-    print(type(p.data), p.size())
-
-optimizer = optim.SGD(custom_nn.parameters(), lr=0.01)
-custom_nn.fit(X_train, y_train, epochs=100)
+custom_nn = CustomNetwork(4, [784, 512, 256, 10])
+optimizer = optim.SGD(custom_nn.parameters(), lr=0.1)
+custom_nn.fit(X_train, y_train, optimizer=optimizer, epochs=10)
+custom_nn.evaluate(X_test, y_test)

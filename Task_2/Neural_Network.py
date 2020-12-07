@@ -9,7 +9,8 @@ class Dataset:
     Each digit is represented as a vector of 28x28 pixels, where each pixel can have values between 0-255.
     In total there are 60000 elements in the training set while the elements in the test set are 10000.
     """
-    def __init__(self):
+    def __init__(self, reshape):
+        self.reshape = reshape
         train_loader = MNIST(root='.', download=True)
         test_loader = MNIST(root='.', train=False)
 
@@ -18,10 +19,10 @@ class Dataset:
         # self.__test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy())
         # self.__test_labels = self.__reshape_labels(test_loader.test_labels.numpy())
 
-        self.debug_train_data = self.__reshape_ditigs_matrix(train_loader.train_data.numpy(), size=30000)
-        self.debug_train_labels = self.__reshape_labels(train_loader.train_labels.numpy(), size=30000)
-        self.debug_test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy(), size=1000)
-        self.debug_test_labels = self.__reshape_labels(test_loader.test_labels.numpy(), size=1000)
+        self.debug_train_data = self.__reshape_ditigs_matrix(train_loader.train_data.numpy())
+        self.debug_train_labels = self.__reshape_labels(train_loader.train_labels.numpy())
+        self.debug_test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy())
+        self.debug_test_labels = self.__reshape_labels(test_loader.test_labels.numpy())
 
     def __reshape_ditigs_matrix(self, X, size=None):
         """
@@ -36,10 +37,13 @@ class Dataset:
         return X
 
     def __reshape_labels(self, labels, size=60000):
-        vectorized_labels = np.zeros((10, size))
-        for vector, digit in zip(vectorized_labels.transpose(), labels[:size]):
-            vector[digit] = 1
-        return vectorized_labels
+        if self.reshape is True:
+            vectorized_labels = np.zeros((10, size))
+            for vector, digit in zip(vectorized_labels.transpose(), labels[:size]):
+                vector[digit] = 1
+            return vectorized_labels
+        else:
+            return labels
 
     @property
     def train_data(self):
@@ -283,18 +287,18 @@ class StochasticGradientDescent(NeuralNetwork):
         print(f'Cost history; {loss_history}')
         print(f'Time to finish: {time.process_time()}')
 
-dataset = Dataset()
-X_train = dataset.debug_train_data
-y_train = dataset.debug_train_labels
-X_test = dataset.debug_test_data
-y_test = dataset.debug_test_labels
-# X_test = X_train
-# y_test = y_train
-
-net = StochasticGradientDescent()
-net.add_layer(Layer(784, input_layer=True))
-net.add_layer(Layer(128, activation=ReLU()))
-net.add_layer(Layer(10, activation=Softmax()))
-net.compile(loss=CategoricalCrossEntropy())
-net.fit(X_train, y_train, epochs=2000, lr=0.0001, lamda=1)
-net.predict(X_test, y_test)
+# dataset = Dataset(True)
+# X_train = dataset.debug_train_data
+# y_train = dataset.debug_train_labels
+# X_test = dataset.debug_test_data
+# y_test = dataset.debug_test_labels
+# # X_test = X_train
+# # y_test = y_train
+#
+# net = StochasticGradientDescent()
+# net.add_layer(Layer(784, input_layer=True))
+# net.add_layer(Layer(128, activation=ReLU()))
+# net.add_layer(Layer(10, activation=Softmax()))
+# net.compile(loss=CategoricalCrossEntropy())
+# net.fit(X_train, y_train, epochs=2000, lr=0.0001, lamda=1)
+# net.predict(X_test, y_test)
