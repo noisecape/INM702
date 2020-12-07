@@ -18,10 +18,10 @@ class Dataset:
         # self.__test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy())
         # self.__test_labels = self.__reshape_labels(test_loader.test_labels.numpy())
 
-        self.debug_train_data = self.__reshape_ditigs_matrix(train_loader.train_data.numpy(), size=10000)
-        self.debug_train_labels = self.__reshape_labels(train_loader.train_labels.numpy(), size=10000)
-        self.debug_test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy(), size=200)
-        self.debug_test_labels = self.__reshape_labels(test_loader.test_labels.numpy(), size=200)
+        self.debug_train_data = self.__reshape_ditigs_matrix(train_loader.train_data.numpy(), size=30000)
+        self.debug_train_labels = self.__reshape_labels(train_loader.train_labels.numpy(), size=30000)
+        self.debug_test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy(), size=1000)
+        self.debug_test_labels = self.__reshape_labels(test_loader.test_labels.numpy(), size=1000)
 
     def __reshape_ditigs_matrix(self, X, size=None):
         """
@@ -61,7 +61,6 @@ class Dataset:
         return self.__train_data[index]
 
 
-
 class Layer:
 
     def __init__(self, n_neurons, input_layer=False, activation=None):
@@ -70,7 +69,7 @@ class Layer:
         self.activation = activation
 
 
-class CrossEntropy:
+class CategoricalCrossEntropy:
 
     @staticmethod
     def delta(y_pred, y):
@@ -80,7 +79,10 @@ class CrossEntropy:
     @staticmethod
     def compute_loss(y_pred, y):
         N = y.shape[1]
-        error = -np.sum(y * np.log(y_pred))/N
+        maxes = np.maximum(y_pred, 1e-15)
+        logs = np.log(maxes)
+        error = -np.sum(y * logs)/N
+
         return error
 
 
@@ -171,13 +173,13 @@ class NeuralNetwork:
         self.bias.append(np.zeros((1, 1)))
         self.Z.append(np.zeros((1, 1)))
         for l in range(len(self.layers)-1):
-            w = np.array(np.random.uniform(-1, 1, (self.layers[l+1].n_neurons, self.layers[l].n_neurons)))
+            w = np.array(np.random.randn(self.layers[l+1].n_neurons, self.layers[l].n_neurons))
             b = np.array(np.random.randn(self.layers[l+1].n_neurons, 1))
             self.weights.append(w)
             self.bias.append(b)
         self.loss = loss
 
-    def fit(self, X_train, y_train, epochs=100, lr=0.01, lamda=0.1):
+    def fit(self, X_train, y_train, epochs=100, lr=0.09, lamda=0.01):
         """
         The training function for the model. The weights and biases are updated using the SGD with mini batches.
         The gradient is computed using the backpropagation technique.
@@ -257,7 +259,7 @@ class StochasticGradientDescent(NeuralNetwork):
     def __init__(self):
         super().__init__()
 
-    def fit(self, X_train, y_train, epochs=1000, lr=0.1, batch_size=1000, lamda=0.1):
+    def fit(self, X_train, y_train, epochs=100, lr=0.1, batch_size=1000, lamda=1):
         # create batches
         random_indices = np.random.permutation(X_train.shape[1])
         loss_history = np.array(np.zeros((epochs, 1)))
@@ -281,18 +283,18 @@ class StochasticGradientDescent(NeuralNetwork):
         print(f'Cost history; {loss_history}')
         print(f'Time to finish: {time.process_time()}')
 
-# dataset = Dataset()
-# X_train = dataset.debug_train_data
-# y_train = dataset.debug_train_labels
-# X_test = dataset.debug_test_data
-# y_test = dataset.debug_test_labels
-# # X_test = X_train
-# # y_test = y_train
-#
-# net = StochasticGradientDescent()
-# net.add_layer(Layer(784, input_layer=True))
-# net.add_layer(Layer(64, activation=ReLU()))
-# net.add_layer(Layer(10, activation=Softmax()))
-# net.compile(loss=CrossEntropy())
-# net.fit(X_train, y_train, epochs=90, lr=0.01, lamda=0.1)
-# net.predict(X_test, y_test)
+dataset = Dataset()
+X_train = dataset.debug_train_data
+y_train = dataset.debug_train_labels
+X_test = dataset.debug_test_data
+y_test = dataset.debug_test_labels
+# X_test = X_train
+# y_test = y_train
+
+net = StochasticGradientDescent()
+net.add_layer(Layer(784, input_layer=True))
+net.add_layer(Layer(128, activation=ReLU()))
+net.add_layer(Layer(10, activation=Softmax()))
+net.compile(loss=CategoricalCrossEntropy())
+net.fit(X_train, y_train, epochs=2000, lr=0.0001, lamda=1)
+net.predict(X_test, y_test)
