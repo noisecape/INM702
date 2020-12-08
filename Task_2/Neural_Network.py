@@ -1,5 +1,6 @@
 from sklearn.metrics import accuracy_score
 import time
+import torch as th
 from torchvision.datasets import MNIST
 import numpy as np
 
@@ -9,41 +10,31 @@ class Dataset:
     Each digit is represented as a vector of 28x28 pixels, where each pixel can have values between 0-255.
     In total there are 60000 elements in the training set while the elements in the test set are 10000.
     """
-    def __init__(self, reshape):
-        self.reshape = reshape
-        train_loader = MNIST(root='.', download=True)
-        test_loader = MNIST(root='.', train=False)
+    def __init__(self):
+        self.__train_loader = MNIST(root='.', download=True)
+        self.__test_loader = MNIST(root='.', train=False)
 
-        # self.__train_data = self.__reshape_ditigs_matrix(train_loader.train_data.numpy())
-        # self.__train_labels = self.__reshape_labels(train_loader.train_labels.numpy())
-        # self.__test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy())
-        # self.__test_labels = self.__reshape_labels(test_loader.test_labels.numpy())
+    def get_train_data(self, perc):
+        size = int(60000 * perc)
+        X = self.__train_loader.train_data.numpy()
+        X = np.reshape([(x/255) for x in X[:size]], (784, size))
+        y = self.__train_loader.train_labels.numpy()
+        y = self.__one_hot_encoding(y[:size])
+        return X, y
 
-        self.debug_train_data = self.__reshape_ditigs_matrix(train_loader.train_data.numpy())
-        self.debug_train_labels = self.__reshape_labels(train_loader.train_labels.numpy())
-        self.debug_test_data = self.__reshape_ditigs_matrix(test_loader.test_data.numpy())
-        self.debug_test_labels = self.__reshape_labels(test_loader.test_labels.numpy())
+    def get_test_data(self, perc):
+        size = int(10000 * perc)
+        X = self.__test_loader.test_data.numpy()
+        X = np.reshape([(x / 255) for x in X[:size]], (784, size))
+        y = self.__test_loader.test_labels.numpy()
+        y = self.__one_hot_encoding(y[:size])
+        return X, y
 
-    def __reshape_ditigs_matrix(self, X, size=None):
-        """
-        :param X: the matrix to be reshaped each of shape(28x28)
-        :return: X_train reshaped with size (784x1)
-        """
-
-        if size:
-            reduced_X = np.reshape([(x/255) for x in X[:size]], (784, size))
-            return reduced_X
-        X = np.reshape([x/255 for x in X], (784, X.shape[0]))
-        return X
-
-    def __reshape_labels(self, labels, size=60000):
-        if self.reshape is True:
-            vectorized_labels = np.zeros((10, size))
-            for vector, digit in zip(vectorized_labels.transpose(), labels[:size]):
-                vector[digit] = 1
-            return vectorized_labels
-        else:
-            return labels
+    def __one_hot_encoding(self, y):
+        vectorized_labels = np.zeros((10, y.shape[0]))
+        for vector, digit in zip(vectorized_labels.transpose(), y):
+            vector[digit] = 1
+        return vectorized_labels
 
     @property
     def train_data(self):
@@ -244,15 +235,13 @@ class NeuralNetwork:
     def predict(self, X_test, y_test):
         # get the outputs
         output = self.forward(X_test)
-        pred = np.argmax(output, axis=0)
-        y_compare = np.argmax(y_test, axis=0)
+        y_pred = np.argmax(output, axis=0)
+        y_true = np.argmax(y_test, axis=0)
         correct = 0
-        errors = 0
-        for i in range(X_test.shape[1]):
-            if pred[i] == y_compare[i]:
-                correct += 1
+        for pred, true in zip(y_pred, y_true):
+            correct += 1 if pred == true else 0
         errors = y_test.shape[1] - correct
-        score = accuracy_score(y_compare, pred)
+        score = correct / y_test.shape[1]
         print(f'Accuracy {score}')
         print(f'Correctly classified digits: {correct}')
         print(f'Misclassified digits: {errors}')
@@ -263,42 +252,41 @@ class StochasticGradientDescent(NeuralNetwork):
     def __init__(self):
         super().__init__()
 
-    def fit(self, X_train, y_train, epochs=100, lr=0.1, batch_size=1000, lamda=1):
+    def fit(self, X_train, y_train, epochs=100, lr=0.1, batch_size=500, lamda=1):
         # create batches
-        random_indices = np.random.permutation(X_train.shape[1])
-        loss_history = np.array(np.zeros((epochs, 1)))
+        epoch_history = []
+        N = X_train.shape[1]
         for e in range(epochs):
             t = X_train.shape[1] / batch_size
+            random_indices = np.random.permutation(X_train.shape[1])
             X_shuffled = X_train[:, random_indices]
             y_shuffled = y_train[:, random_indices]
-            print(f'Processing epoch: {e}')
+            batch_history = []
             for i in range(int(t)):
                 x_batch = X_shuffled[:, i:i+X_shuffled.shape[1]:batch_size]
                 y_batch = y_shuffled[:, i:i+y_shuffled.shape[1]:batch_size]
                 output = self.forward(x_batch)
                 loss_value = self.loss.compute_loss(output, y_batch)
+                batch_history.append(loss_value)
                 grad_weights, grad_bias = self.backward(output, y_batch)
                 for l in range(len(self.weights) - 1, 0, -1):
                     self.weights[l] -= ((lr * (grad_weights[l])) - (lr*lamda)/batch_size)
                     self.bias[l] -= (lr * grad_bias[l])
-            loss_history[e] = loss_value
+            avg_loss = np.sum(batch_history) / N
+            epoch_history.append(avg_loss)
             print(f'Epoch: {e} DONE')
-            print(f'LOSS: {loss_value}')
-        print(f'Cost history; {loss_history}')
+            print(f'LOSS: {avg_loss}')
         print(f'Time to finish: {time.process_time()}')
 
-# dataset = Dataset(True)
-# X_train = dataset.debug_train_data
-# y_train = dataset.debug_train_labels
-# X_test = dataset.debug_test_data
-# y_test = dataset.debug_test_labels
-# # X_test = X_train
-# # y_test = y_train
+
+# dataset = Dataset()
+# X_train, y_train = dataset.get_train_data(perc=0.25)
+# X_test, y_test = dataset.get_test_data(perc=0.5)
 #
 # net = StochasticGradientDescent()
 # net.add_layer(Layer(784, input_layer=True))
-# net.add_layer(Layer(128, activation=ReLU()))
+# net.add_layer(Layer(10, activation=ReLU()))
 # net.add_layer(Layer(10, activation=Softmax()))
 # net.compile(loss=CategoricalCrossEntropy())
-# net.fit(X_train, y_train, epochs=2000, lr=0.0001, lamda=1)
+# net.fit(X_train, y_train, epochs=10, lr=0.01, lamda=0)
 # net.predict(X_test, y_test)
