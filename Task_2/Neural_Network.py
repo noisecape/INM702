@@ -77,7 +77,6 @@ class CategoricalCrossEntropy:
         maxes = np.maximum(y_pred, 1e-15)
         logs = np.log(maxes)
         error = -np.sum(y * logs)/N
-
         return error
 
 
@@ -88,11 +87,6 @@ class Softmax:
         num = np.exp(num)
         result = num / np.sum(num, axis=0, keepdims=True)
         return result
-        # maxes = np.max(z, axis=0, keepdims=True)
-        # partial = z-maxes
-        # num = np.exp(partial)
-        # den = np.sum(num, axis=0, keepdims=True)
-
 
 class Sigmoid:
 
@@ -105,33 +99,27 @@ class Sigmoid:
 class ReLU:
 
     def apply_activation(self, z):
-        a = np.zeros(z.shape)
-        for i in range(z.shape[0]):
-            for j in range(z.shape[1]):
-                a[i, j] = np.maximum(0, z[i, j])
+        a = np.maximum(0, [x for x in z])
         return a
 
     def derivative(self, z):
         z_prime = np.zeros(z.shape)
         for i in range(z.shape[0]):
             for j in range(z.shape[1]):
-                z_prime[i, j] = 0.1 if z[i, j] < 0 else 1
+                z_prime[i, j] = 0 if z[i, j] < 0 else 1
         return z_prime
 
-class LeakyReLU:
-    def apply_activation(self, z):
-        a = np.zeros(z.shape)
-        for i in range(z.shape[0]):
-            for j in range(z.shape[1]):
-                a[i, j] = np.maximum(0.1, z[i, j])
-        return a
-
-    def derivative(self, z):
-        z_prime = np.zeros(z.shape)
-        for i in range(z.shape[0]):
-            for j in range(z.shape[1]):
-                z_prime[i, j] = 0.1 if z[i, j] < 0 else 1
-        return z_prime
+# class LeakyReLU:
+#     def apply_activation(self, z):
+#         a = np.maximum(0.1, [x for x in z])
+#         return a
+#
+#     def derivative(self, z):
+#         z_prime = np.zeros(z.shape)
+#         for i in range(z.shape[0]):
+#             for j in range(z.shape[1]):
+#                 z_prime[i, j] = 0.1 if z[i, j] < 0 else 1
+#         return z_prime
 
 
 class NeuralNetwork:
@@ -163,21 +151,26 @@ class NeuralNetwork:
         self.layers.append(layer)
         NeuralNetwork.n_layers += 1
 
-    def compile(self, loss, optimizer=None, lr=0.0001):
+    def compile(self, loss):
         self.weights.append(np.zeros((1, 1)))
         self.bias.append(np.zeros((1, 1)))
+        # append a fist element as a zero because the activation function can be applied only to the hidden layers
+        # thus in the Z values for the nodes in the input layer is set to zero and it will never be modified
         self.Z.append(np.zeros((1, 1)))
+        self.A.append(np.zeros((1, 1)))
         for l in range(len(self.layers)-1):
-            w = np.array(np.random.randn(self.layers[l+1].n_neurons, self.layers[l].n_neurons))
-            b = np.array(np.random.randn(self.layers[l+1].n_neurons, 1))
+            w = np.array(np.random.uniform(-1, 1, (self.layers[l+1].n_neurons, self.layers[l].n_neurons))
+                         * np.sqrt(2/self.layers[l].n_neurons))
+            b = np.array(np.random.uniform(-1, 1, (self.layers[l+1].n_neurons, 1)))
             self.weights.append(w)
             self.bias.append(b)
         self.loss = loss
 
-    def fit(self, X_train, y_train, epochs=100, lr=0.09, lamda=0.01):
+    def fit(self, X_train, y_train, epochs=100, lr=0.09, lamda=0.01, min_delta=1e-5, patience=5):
         """
         The training function for the model. The weights and biases are updated using the SGD with mini batches.
         The gradient is computed using the backpropagation technique.
+        :param min_delta:
         :param lr:
         :param lamda:
         :param X_train: the input data. It contains all the vectors of pixel for each image in the training set
@@ -185,28 +178,41 @@ class NeuralNetwork:
         :param batch_size: the size of each batch
         :param epochs: the number of epochs or iteration required for the whole training process
         """
-        loss_history = np.array(np.zeros((epochs, 1)))
+        loss_history = []
+        start_time = time.process_time()
         for e in range(epochs):
             print(f'EPOCH # {e}')
             output = self.forward(X_train)
             loss_value = self.loss.compute_loss(output, y_train)
             print(f'LOSS: {loss_value}')
-            loss_history[e] = loss_value
+            loss_history.append(loss_value)
             grad_weights, grad_biases = self.backward(output, y_train)
             for l in range(len(self.weights)-1, 0, -1):
-                self.weights[l] -= ((lr * (grad_weights[l])) - (lr*lamda)/X_train.shape[1])
-                self.bias[l] -= (lr*grad_biases[l])
-        print(f'LOSS HISTORY: {loss_history}')
-        print(f'Time to finish: {time.process_time()}')
+                self.weights[l] -= ((lr * (grad_weights[l-1])) - (lr*lamda)/X_train.shape[1])
+                self.bias[l] -= (lr*grad_biases[l-1])
+            if e > patience:
+                stop_counter = 0
+                for previous_loss in loss_history[-1:-patience-1:-1]:
+                    if round(previous_loss, 6) < round(loss_value, 6):
+                        stop_counter += 1
+                if stop_counter >= patience:
+                    print(f'Early Stopping. Actual loss: {loss_value}.')
+                    break
+        print(f'Time to finish: {round((time.process_time() - start_time), 3)}')
 
     def forward(self, X):
         a_l = X
-        self.A.append(a_l)
+        A = []
+        Z = []
+        A.append(a_l)
         for l in range(1, NeuralNetwork.n_layers):
             z_l = np.dot(self.weights[l], a_l) + self.bias[l]
             a_l = self.layers[l].activation.apply_activation(z_l)
-            self.Z.append(z_l)
-            self.A.append(a_l)
+            Z.append(z_l)
+            A.append(a_l)
+
+        self.A[1:] = A[1:]
+        self.Z[1:] = Z
         return a_l
 
     def backward(self, output, y):
@@ -216,7 +222,7 @@ class NeuralNetwork:
         d_biases.append(db)
         dw = np.dot(delta, self.A[-2].transpose()) * 1/y.shape[1]
         d_weights.append(dw)
-        for l in range(NeuralNetwork.n_layers-2, 0, -1):
+        for l in range(NeuralNetwork.n_layers-2, 1, -1):
             l_prev, l_current, l_next = l-1, l, l+1
             delta = np.dot(self.weights[l_next].transpose(), delta) * self.layers[l_current].\
                 activation.derivative(self.Z[l_current])
@@ -252,8 +258,8 @@ class StochasticGradientDescent(NeuralNetwork):
     def __init__(self):
         super().__init__()
 
-    def fit(self, X_train, y_train, epochs=100, lr=0.1, batch_size=500, lamda=1):
-        # create batches
+    def fit(self, X_train, y_train, epochs=100, lr=0.1, batch_size=500, lamda=1, patience=5):
+        start_time = time.process_time()
         epoch_history = []
         N = X_train.shape[1]
         for e in range(epochs):
@@ -270,23 +276,34 @@ class StochasticGradientDescent(NeuralNetwork):
                 batch_history.append(loss_value)
                 grad_weights, grad_bias = self.backward(output, y_batch)
                 for l in range(len(self.weights) - 1, 0, -1):
-                    self.weights[l] -= ((lr * (grad_weights[l])) - (lr*lamda)/batch_size)
-                    self.bias[l] -= (lr * grad_bias[l])
+                    self.weights[l] -= ((lr * (grad_weights[l-1])) - (lr*lamda)/batch_size)
+                    self.bias[l] -= (lr * grad_bias[l-1])
             avg_loss = np.sum(batch_history) / N
+            if e > patience:
+                stop_counter = 0
+                for previous_loss in epoch_history[-1:-patience-1:-1]:
+                    if round(previous_loss, 6) < round(avg_loss, 6):
+                        stop_counter += 1
+                if stop_counter >= patience:
+                    print(f'Early Stopping. Actual loss: {round(avg_loss, 6)}.')
+                    break
             epoch_history.append(avg_loss)
-            print(f'Epoch: {e} DONE')
+            print(f'EPOCH # {e}')
             print(f'LOSS: {avg_loss}')
-        print(f'Time to finish: {time.process_time()}')
+
+        print(f'Time to finish: {round((time.process_time() - start_time), 3)}')
 
 
-# dataset = Dataset()
-# X_train, y_train = dataset.get_train_data(perc=0.25)
-# X_test, y_test = dataset.get_test_data(perc=0.5)
-#
-# net = StochasticGradientDescent()
-# net.add_layer(Layer(784, input_layer=True))
-# net.add_layer(Layer(10, activation=ReLU()))
-# net.add_layer(Layer(10, activation=Softmax()))
-# net.compile(loss=CategoricalCrossEntropy())
-# net.fit(X_train, y_train, epochs=10, lr=0.01, lamda=0)
-# net.predict(X_test, y_test)
+dataset = Dataset()
+X_train, y_train = dataset.get_train_data(perc=0.5)
+X_test, y_test = dataset.get_test_data(perc=0.5)
+
+net = StochasticGradientDescent()
+net.add_layer(Layer(784, input_layer=True))
+net.add_layer(Layer(128, activation=ReLU()))
+net.add_layer(Layer(128, activation=ReLU()))
+net.add_layer(Layer(128, activation=ReLU()))
+net.add_layer(Layer(10, activation=Softmax()))
+net.compile(loss=CategoricalCrossEntropy())
+net.fit(X_train, y_train, epochs=2000, batch_size=100, lr=0.01, lamda=0.0001, patience=5)
+net.predict(X_test, y_test)
