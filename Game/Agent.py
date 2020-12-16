@@ -178,7 +178,6 @@ class Agent:
         return self.get_shortest_path(destination, start)
 
     def apply_a_star(self, graph):
-        print("apply a_star")
         start_node = graph[0]
         dest_node = graph[-1]
         priority_queue = [start_node]
@@ -200,7 +199,7 @@ class Agent:
                 if new_g_score < g_score[neighbor]:
                     neighbor.predecessor = current
                     g_score[neighbor] = new_g_score
-                    neighbor.f_score = g_score [neighbor] + self.get_euclidean_distance(neighbor.location[0], dest_node.location[0], neighbor.location[1], dest_node.location[1])
+                    neighbor.f_score = g_score[neighbor] + self.get_euclidean_distance(neighbor.location[0], dest_node.location[0], neighbor.location[1], dest_node.location[1])
                     if neighbor not in priority_queue:
                         priority_queue.append(neighbor)
                         priority_queue.sort(key=lambda x: x.f_score, reverse=True)

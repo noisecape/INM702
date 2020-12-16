@@ -1,7 +1,7 @@
 from Game.Utilities import PlayerStrategy
 from Game import Agent, Node
 import numpy as np
-
+import time as tm
 
 class GameManager:
     time = 0
@@ -80,7 +80,9 @@ class GameManager:
         GameManager.time = 0
         print("Game started")
         time_spent = 0
+        start_time = tm.process_time()
         winning_path = self.__agent.apply_strategy(self.__graph, self.__board)
+        execution_time = tm.process_time() - start_time
         for location in winning_path:
             x = location[0]
             y = location[1]
@@ -93,6 +95,7 @@ class GameManager:
             time_spent = 0
         self.__print_grid(winning_path)
         print(f"Total time required: {GameManager.time}")
+        return GameManager.time, execution_time
 
     def __print_horizontal_border(self):
         for i in range(self.__n_columns):
@@ -116,23 +119,42 @@ class GameManager:
         print(end='+')
         print()
 
-game_manager = GameManager(30, 10)
 
-# print('DIJKSTRA')
-# player1 = Agent.Agent()
-# player1.strategy = PlayerStrategy.DIJKSTRA.name
-# game_manager.agent = player1
-# game_manager.start_game()
 
-print('NAIVE')
-player2 = Agent.Agent()
-player2.strategy = PlayerStrategy.NAIVE.name
-game_manager.agent = player2
-game_manager.start_game()
+naive_trials = []
+dijkstra_trials = []
+a_star_trials = []
+trials = [naive_trials, dijkstra_trials, a_star_trials]
+i = 0
+for e in range(70):
+    game_manager = GameManager(16+i, 8+i)
+    print('NAIVE')
+    player2 = Agent.Agent()
+    player2.strategy = PlayerStrategy.NAIVE.name
+    game_manager.agent = player2
+    path_time, execution_time = game_manager.start_game()
+    trials[0].append((path_time, execution_time))
 
-# print('A*')
-# player3 = Agent.Agent()
-# player3.strategy = PlayerStrategy.A_STAR.name
-# game_manager.agent = player3
-# game_manager.start_game()
+    print('DIJKSTRA')
+    player1 = Agent.Agent()
+    player1.strategy = PlayerStrategy.DIJKSTRA.name
+    game_manager.agent = player1
+    path_time, execution_time = game_manager.start_game()
+    trials[1].append((path_time, execution_time))
+
+    print('A*')
+    player3 = Agent.Agent()
+    player3.strategy = PlayerStrategy.A_STAR.name
+    game_manager.agent = player3
+    path_time, execution_time = game_manager.start_game()
+    trials[2].append((path_time, execution_time))
+    i += 1
+
+print(f'## NAIVE APPROACH: Average time to find the path {np.mean(trials[0][0])}')
+print(f'## DIJKSTRA APPROACH: Average time to find the path {np.mean(trials[1][0])}')
+print(f'## A* APPROACH: Average time to find the path {np.mean(trials[2][0])}')
+print()
+print(f'## NAIVE APPROACH: Average time to running algorithm {np.mean(trials[0][1])}')
+print(f'## DIJKSTRA APPROACH: Average time to running algorithm {np.mean(trials[1][1])}')
+print(f'## A* APPROACH: Average time to running algorithm {np.mean(trials[2][1])}')
 
