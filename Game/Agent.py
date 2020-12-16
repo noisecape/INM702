@@ -1,6 +1,7 @@
 from Game.Utilities import PlayerStrategy, Moves
 import sys
 import math
+import numpy as np
 
 
 class Agent:
@@ -79,28 +80,41 @@ class Agent:
         goal_x = len(board) - 1
         goal_y = len(board[0]) - 1
 
+        surrounding_area = [(goal_x, goal_y-1), (goal_x-1, goal_y)]
+
         for key, value in moves.items():
             if key == Moves.UP.name:
                 up_x = value[0]
                 up_y = value[1]
-                distance = self.get_euclidean_distance(goal_x, up_x, goal_y, up_y)
+                if (up_x-1, up_y) in surrounding_area:
+                    distance = self.get_euclidean_distance(goal_x, up_x, goal_y, up_y)
+                else:
+                    distance = self.get_euclidean_distance(goal_x, up_x, goal_y, up_y) + (np.random.uniform(0.1, 1) * board[up_x][up_y])
                 distances.update({Moves.UP.name: distance})
             elif key == Moves.DOWN.name:
                 down_x = value[0]
                 down_y = value[1]
-                distance = self.get_euclidean_distance(goal_x, down_x, goal_y, down_y)
+                if (down_x+1, down_y) in surrounding_area:
+                    distance = self.get_euclidean_distance(goal_x, down_x, goal_y, down_y)
+                else:
+                    distance = self.get_euclidean_distance(goal_x, down_x, goal_y, down_y) + (np.random.uniform(0.1, 1) * board[down_x][down_y])
                 distances.update({Moves.DOWN.name: distance})
             elif key == Moves.LEFT.name:
                 left_x = value[0]
                 left_y = value[1]
-                distance = self.get_euclidean_distance(goal_x, left_x, goal_y, left_y)
+                if (left_x, left_y-1) in surrounding_area:
+                    distance = self.get_euclidean_distance(goal_x, left_x, goal_y, left_y)
+                else:
+                    distance = self.get_euclidean_distance(goal_x, left_x, goal_y, left_y) + (np.random.uniform(0.1, 1) * board[left_x][left_y])
                 distances.update({Moves.LEFT.name: distance})
             else:
                 right_x = value[0]
                 right_y = value[1]
-                distance = self.get_euclidean_distance(goal_x, right_x, goal_y, right_y)
+                if (right_x, right_y+1) in surrounding_area:
+                    distance = self.get_euclidean_distance(goal_x, right_x, goal_y, right_y)
+                else:
+                    distance = self.get_euclidean_distance(goal_x, right_x, goal_y, right_y) + (np.random.uniform(0.1, 1) * board[right_x][right_y])
                 distances.update({Moves.RIGHT.name: distance})
-
         return distances
 
     def get_euclidean_distance(self, x1, x2, y1, y2):
@@ -186,7 +200,7 @@ class Agent:
                 if new_g_score < g_score[neighbor]:
                     neighbor.predecessor = current
                     g_score[neighbor] = new_g_score
-                    neighbor.f_score = g_score[neighbor] + self.get_euclidean_distance(neighbor.location[0], dest_node.location[0], neighbor.location[1], dest_node.location[1])
+                    neighbor.f_score = g_score [neighbor] + self.get_euclidean_distance(neighbor.location[0], dest_node.location[0], neighbor.location[1], dest_node.location[1])
                     if neighbor not in priority_queue:
                         priority_queue.append(neighbor)
                         priority_queue.sort(key=lambda x: x.f_score, reverse=True)
