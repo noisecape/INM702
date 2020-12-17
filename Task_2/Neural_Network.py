@@ -1,8 +1,7 @@
-from sklearn.metrics import accuracy_score
 import time
-import torch as th
 from torchvision.datasets import MNIST
 import numpy as np
+
 
 class Dataset:
     """
@@ -17,18 +16,30 @@ class Dataset:
     def get_train_data(self, perc):
         size = int(60000 * perc)
         X = self.__train_loader.train_data.numpy()
-        X = np.reshape([(x/255) for x in X[:size]], (784, size))
+        X_train = np.zeros((size, 784))
+        indices = np.arange(0, size)
+        for el, i in zip(X, indices):
+            el = np.reshape(el, 784)
+            el = el / 255
+            X_train[i] = el
+        X_train = X_train.transpose()
         y = self.__train_loader.train_labels.numpy()
         y = self.__one_hot_encoding(y[:size])
-        return X, y
+        return X_train, y
 
     def get_test_data(self, perc):
-        size = int(10000 * perc)
+        size = int(60000 * perc)
         X = self.__test_loader.test_data.numpy()
-        X = np.reshape([(x / 255) for x in X[:size]], (784, size))
+        X_test = np.zeros((size, 784))
+        indices = np.arange(0, size)
+        for el, i in zip(X, indices):
+            el = np.reshape(el, 784)
+            el = el / 255
+            X_test[i] = el
+        X_test = X_test.transpose()
         y = self.__test_loader.test_labels.numpy()
         y = self.__one_hot_encoding(y[:size])
-        return X, y
+        return X_test, y
 
     def __one_hot_encoding(self, y):
         vectorized_labels = np.zeros((10, y.shape[0]))
@@ -111,7 +122,7 @@ class ReLU:
 
 class LeakyReLU:
     def apply_activation(self, z):
-        a = np.maximum(0.02, [x for x in z])
+        a = np.maximum(0.01, [x for x in z])
         return a
 
     def derivative(self, z):
@@ -166,7 +177,7 @@ class NeuralNetwork:
             self.bias.append(b)
         self.loss = loss
 
-    def fit(self, X_train, y_train, epochs=100, lr=0.09, lamda=0.01, min_delta=1e-5, patience=5):
+    def fit(self, X_train, y_train, epochs=100, lr=0.09, lamda=0.01, patience=5):
         """
         The training function for the model. The weights and biases are updated using the SGD with mini batches.
         The gradient is computed using the backpropagation technique.
@@ -295,15 +306,13 @@ class StochasticGradientDescent(NeuralNetwork):
 
 
 dataset = Dataset()
-X_train, y_train = dataset.get_train_data(perc=0.5)
-X_test, y_test = dataset.get_test_data(perc=0.5)
+X_train, y_train = dataset.get_train_data(perc=1)
+X_test, y_test = dataset.get_test_data(perc=1)
 
 net = StochasticGradientDescent()
 net.add_layer(Layer(784, input_layer=True))
-net.add_layer(Layer(64, activation=LeakyReLU()))
-net.add_layer(Layer(64, activation=Sigmoid()))
-net.add_layer(Layer(64, activation=LeakyReLU()))
+net.add_layer(Layer(64, activation=ReLU()))
 net.add_layer(Layer(10, activation=Softmax()))
 net.compile(loss=CategoricalCrossEntropy())
-net.fit(X_train, y_train, epochs=2000, batch_size=100, lr=0.01, lamda=0.0001, patience=5)
+net.fit(X_train, y_train, epochs=100, lr=0.01, lamda=0.01, patience=5)
 net.predict(X_test, y_test)
