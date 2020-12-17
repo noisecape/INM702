@@ -153,9 +153,7 @@ class Agent:
         return closest_node
 
     def apply_dijkstra(self, graph):
-        shortest_distance = []
         unseen_nodes = []
-        path = []
         start = graph[0]
         destination = graph[-1]
         for node in graph:
@@ -163,7 +161,6 @@ class Agent:
                 node.distance = 0
             else:
                 node.distance = sys.maxsize
-            shortest_distance.append(node)
         unseen_nodes = graph[:]
 
         while len(unseen_nodes) != 0:

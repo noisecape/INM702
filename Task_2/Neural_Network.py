@@ -103,23 +103,23 @@ class ReLU:
         return a
 
     def derivative(self, z):
-        z_prime = np.zeros(z.shape)
+        z_prime = z
         for i in range(z.shape[0]):
             for j in range(z.shape[1]):
                 z_prime[i, j] = 0 if z[i, j] < 0 else 1
         return z_prime
 
-# class LeakyReLU:
-#     def apply_activation(self, z):
-#         a = np.maximum(0.1, [x for x in z])
-#         return a
-#
-#     def derivative(self, z):
-#         z_prime = np.zeros(z.shape)
-#         for i in range(z.shape[0]):
-#             for j in range(z.shape[1]):
-#                 z_prime[i, j] = 0.1 if z[i, j] < 0 else 1
-#         return z_prime
+class LeakyReLU:
+    def apply_activation(self, z):
+        a = np.maximum(0.02, [x for x in z])
+        return a
+
+    def derivative(self, z):
+        z_prime = np.zeros(z.shape)
+        for i in range(z.shape[0]):
+            for j in range(z.shape[1]):
+                z_prime[i, j] = 0.2 if z[i, j] < 0 else 1
+        return z_prime
 
 
 class NeuralNetwork:
@@ -159,9 +159,9 @@ class NeuralNetwork:
         self.Z.append(np.zeros((1, 1)))
         self.A.append(np.zeros((1, 1)))
         for l in range(len(self.layers)-1):
-            w = np.array(np.random.uniform(-1, 1, (self.layers[l+1].n_neurons, self.layers[l].n_neurons))
+            w = np.array(np.random.randn(self.layers[l+1].n_neurons, self.layers[l].n_neurons)
                          * np.sqrt(2/self.layers[l].n_neurons))
-            b = np.array(np.random.uniform(-1, 1, (self.layers[l+1].n_neurons, 1)))
+            b = np.array(np.random.randn(self.layers[l+1].n_neurons, 1))
             self.weights.append(w)
             self.bias.append(b)
         self.loss = loss
@@ -294,16 +294,16 @@ class StochasticGradientDescent(NeuralNetwork):
         print(f'Time to finish: {round((time.process_time() - start_time), 3)}')
 
 
-# dataset = Dataset()
-# X_train, y_train = dataset.get_train_data(perc=0.5)
-# X_test, y_test = dataset.get_test_data(perc=0.5)
-#
-# net = StochasticGradientDescent()
-# net.add_layer(Layer(784, input_layer=True))
-# net.add_layer(Layer(128, activation=ReLU()))
-# net.add_layer(Layer(128, activation=ReLU()))
-# net.add_layer(Layer(128, activation=ReLU()))
-# net.add_layer(Layer(10, activation=Softmax()))
-# net.compile(loss=CategoricalCrossEntropy())
-# net.fit(X_train, y_train, epochs=2000, batch_size=100, lr=0.01, lamda=0.0001, patience=5)
-# net.predict(X_test, y_test)
+dataset = Dataset()
+X_train, y_train = dataset.get_train_data(perc=0.5)
+X_test, y_test = dataset.get_test_data(perc=0.5)
+
+net = StochasticGradientDescent()
+net.add_layer(Layer(784, input_layer=True))
+net.add_layer(Layer(64, activation=LeakyReLU()))
+net.add_layer(Layer(64, activation=Sigmoid()))
+net.add_layer(Layer(64, activation=LeakyReLU()))
+net.add_layer(Layer(10, activation=Softmax()))
+net.compile(loss=CategoricalCrossEntropy())
+net.fit(X_train, y_train, epochs=2000, batch_size=100, lr=0.01, lamda=0.0001, patience=5)
+net.predict(X_test, y_test)
