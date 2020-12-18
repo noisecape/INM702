@@ -122,48 +122,5 @@ class CustomNetwork(nn.Module):
         plt.xlabel = 'Predicted Values'
 
 
-# device = th.device('cuda' if th.cuda.is_available() else 'cpu')
-# print(device)
-# dataset = Dataset()
-# X_train, y_train = dataset.get_train_data(size=1)
-# X_test, y_test = dataset.get_test_data(size=1)
-# custom_nn = CustomNetwork(3, [784, 256, 10])
-# optimizer = optim.SGD(custom_nn.parameters(), lr=0.001)
-# optimizer = optim.Adam(custom_nn.parameters(), lr=0.001, weight_decay=0.1)
-# custom_nn.fit(X_train, y_train, optimizer=optimizer, epochs=10)
-# _, _, _ = custom_nn.evaluate(X_test, y_test)
-
-
-# Improvements: trying out different architectures
-# dataset = Dataset()
-# X_train, y_train = dataset.get_train_data(size=1)
-# X_test, y_test = dataset.get_test_data(size=1)
-#
-# net_1 = CustomNetwork(3, [784, 256, 10], dropout=True)
-# net_2 = CustomNetwork(3, [784, 128, 10], dropout=True)
-# net_3 = CustomNetwork(4, [784, 512, 128, 10], dropout=True)
-# net_4 = CustomNetwork(3, [784, 256, 10], dropout=False)
-# net_5 = CustomNetwork(3, [784, 128, 10], dropout=False)
-# net_6 = CustomNetwork(4, [784, 512, 128, 10], dropout=False)
-# neural_networks = [net_1, net_2, net_3, net_4, net_5, net_6]
-#
-# final_scores = []
-#
-# for index, my_nn in enumerate(neural_networks):
-#     opt1 = optim.SGD(my_nn.parameters(), lr=0.001, momentum=0.9, weight_decay=0.1)
-#     opt2 = optim.Adam(my_nn.parameters(), lr=0.001, weight_decay=0.01)
-#     opt3 = optim.Adagrad(my_nn.parameters(), lr=0.01, weight_decay=0.01)
-#     optimizers = [('SGD', opt1), ('ADAM', opt2), ('ADAGRAD', opt3)]
-#     for my_opt in optimizers:
-#         print(f'Training the {index+1} Neural Network using {my_opt[0]} as optimizer')
-#         start_time = time.process_time()
-#         my_nn.fit(X_train, y_train, optimizer=my_opt[1], epochs=10)
-#         correct, errors, accuracy, cm = my_nn.evaluate(X_test, y_test)
-#         execution_time = time.process_time() - start_time
-#         final_scores.append(('Network'+str(index), execution_time, cm, correct, errors, accuracy))
-#         print('{index} Neural Network trained in {execution_time} ms'.format(index=index+1,
-#                                                                                   execution_time=execution_time))
-
-
 
 

@@ -28,7 +28,7 @@ class Dataset:
         return X_train, y
 
     def get_test_data(self, perc):
-        size = int(60000 * perc)
+        size = int(10000 * perc)
         X = self.__test_loader.test_data.numpy()
         X_test = np.zeros((size, 784))
         indices = np.arange(0, size)
@@ -147,8 +147,6 @@ class NeuralNetwork:
         activation (str): by default is the sigmoid function. Possible values: sigmoid, reLU
     """
 
-    n_layers = 0
-
     def __init__(self):
         self.layers = []
         self.optimizer = None
@@ -157,10 +155,11 @@ class NeuralNetwork:
         self.A = []
         self.weights = []
         self.bias = []
+        self.n_layers = 0
 
     def add_layer(self, layer):
         self.layers.append(layer)
-        NeuralNetwork.n_layers += 1
+        self.n_layers += 1
 
     def compile(self, loss):
         self.weights.append(np.zeros((1, 1)))
@@ -216,7 +215,7 @@ class NeuralNetwork:
         A = []
         Z = []
         A.append(a_l)
-        for l in range(1, NeuralNetwork.n_layers):
+        for l in range(1, self.n_layers):
             z_l = np.dot(self.weights[l], a_l) + self.bias[l]
             a_l = self.layers[l].activation.apply_activation(z_l)
             Z.append(z_l)
@@ -233,7 +232,7 @@ class NeuralNetwork:
         d_biases.append(db)
         dw = np.dot(delta, self.A[-2].transpose()) * 1/y.shape[1]
         d_weights.append(dw)
-        for l in range(NeuralNetwork.n_layers-2, 1, -1):
+        for l in range(self.n_layers-2, 1, -1):
             l_prev, l_current, l_next = l-1, l, l+1
             delta = np.dot(self.weights[l_next].transpose(), delta) * self.layers[l_current].\
                 activation.derivative(self.Z[l_current])
@@ -305,14 +304,5 @@ class StochasticGradientDescent(NeuralNetwork):
         print(f'Time to finish: {round((time.process_time() - start_time), 3)}')
 
 
-dataset = Dataset()
-X_train, y_train = dataset.get_train_data(perc=1)
-X_test, y_test = dataset.get_test_data(perc=1)
 
-net = StochasticGradientDescent()
-net.add_layer(Layer(784, input_layer=True))
-net.add_layer(Layer(64, activation=ReLU()))
-net.add_layer(Layer(10, activation=Softmax()))
-net.compile(loss=CategoricalCrossEntropy())
-net.fit(X_train, y_train, epochs=100, lr=0.01, lamda=0.01, patience=5)
-net.predict(X_test, y_test)
+
