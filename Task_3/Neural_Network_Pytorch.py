@@ -23,12 +23,16 @@ class Dataset(MNIST):
     def get_train_data(self, size):
         limit = int(60000*size)
         train_data = th.reshape(self.__train_loader.train_data, (-1, 784))
+        for x in train_data:
+            x = x/255
         train_labels = self.__train_loader.train_labels
         return train_data[:limit].float(), train_labels[:limit].long()
 
     def get_test_data(self, size):
         limit = int(10000 * size)
         test_data = th.reshape(self.__test_loader.test_data, (-1, 784))
+        for x in test_data:
+            x = x/255
         test_labels = self.__test_loader.test_labels
         return test_data[:limit].float(), test_labels[:limit].long()
 
@@ -122,5 +126,6 @@ class CustomNetwork(nn.Module):
         plt.xlabel = 'Predicted Values'
 
 
-
+data = Dataset()
+data.get_train_data(0.4)
 
