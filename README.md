@@ -8,6 +8,8 @@ To visualize the work, it is required to use Jupiter notebook. In fact, the note
 This folder contains two relevant files: Task1.ipynb and Task2_3.ipynb, which are the jupiter notebooks respectively for the first (individual task), the second and the third task.
 These former file contains the solution to the first Task, while the latter for task 2 and 3. Both files can be executed entirely from Jupiter Notebook, without using external tools.
 
+## NOTE: to run the notebook that contains the solution for task 1, you need to specify the absolute path of the folder 'Task1' in your computer. This can be done by opening the Jupyter Notebook, and modifying accordingly the line 'sys.path.append('/<your_absolute_path_to_Task1_folder>/')' which can be found at the top of the Notebook.
+
 ### Game Folder
 The first task is contained in this folder. Inside there are 4 classes, Agent.py, GameManager.py, Node.py and Utilities.py.
 
